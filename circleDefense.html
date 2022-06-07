@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Javascript game</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel = "icon" href = "data:image/png;base64,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" type = "image/x-icon">
+</head>
+<body onload = "startGame()">
+<div>
+	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
+	<div id="fpsDisplay" style="user-select: none">FPS:</div>
+	<p>
+		<canvas id="myCanvas" width="600" height="480" style="border:2 px solid black;"></canvas>
+	</p>
+</div>
+<script>
+
+const CANVAS_WIDTH = 600;
+const CANVAS_HEIGHT = 480;
+let canvas = undefined;
+let ctx = undefined;
+let xCanvas = undefined;
+let yCanvas = undefined;
+const FPS = 60;
+let frame = 0;
+let debugFrame = 0;
+const UNIVERSAL_LINE_WIDTH = 2;
+
+// constructor
+function vec2(x, y, debugId = undefined){
+	this.x = x;
+	this.y = y;
+	this.debugId = debugId;
+}
+
+// returns new vec2
+vec2.prototype.subtract = function(v)
+{
+	return new vec2(this.x - v.x, this.y - v.y);
+}
+
+// returns new vec2
+vec2.prototype.normalize = function()
+{
+	let len = this.len();
+	if (len == 0.0)
+	{
+		throw 'cannot normalize zero vector';
+	}
+	return this.mult(1/len);
+}
+
+// returns new vec2
+vec2.prototype.add = function(v)
+{
+	return new vec2(this.x + v.x, this.y + v.y);
+}
+
+// returns new vec2
+vec2.prototype.mult = function(c)
+{
+	return new vec2(this.x*c, this.y*c);
+}
+
+vec2.prototype.len = function()
+{
+	return Math.sqrt(this.len_sq());
+}
+
+vec2.prototype.len_sq = function()
+{
+	return vec2.dot(this, this);
+}
+
+vec2.dot = function(v1, v2)
+{
+	return v1.x*v2.x + v1.y*v2.y;
+}
+
+// 2d scalar cross product
+vec2.cross = function(v1, v2)
+{
+	return v1.x*v2.y - v2.x*v1.y;
+}
+
+// args are vec2 objects
+// returns boolean
+const MIN_SIN = 1e-9;
+// will throw error in vec2.normalize if zero vector is one of the args
+vec2.is_parallel = function(v1, v2){
+	let v1n = v1.normalize();
+	let v2n = v2.normalize();
+	return Math.abs( v1n.x*v2n.y - v1n.y*v2n.x ) < MIN_SIN;	// normalize first to minimize influence of vector length on parallel result
+//	return Math.abs(v1.x*v2.y - v2.x*v1.y) < MIN_VEC_LEN;
+	// ERROR PREVIOUSLY HERE: crossProd(v1, v2) == zero if parallel vectors OR if one (or both) vectors have very small length
+}
+
+const MIN_VEC_LEN = 1e-9;
+vec2.is_same_loc = function(v1, v2)
+{
+	// hopefully more robust against floating point error than [(v1-v2).len_sq() == 0]
+	return v1.subtract(v2).len_sq() < MIN_VEC_LEN*MIN_VEC_LEN;
+}
+
+// returns new vec2 equal to *this* vec2 rotate theta radians about origin
+vec2.prototype.rotate = function(theta)
+{
+	let COS = Math.cos(theta);
+	let SIN = Math.sin(theta);
+	return new vec2(this.x*COS - this.y*SIN, this.x*SIN + this.y*COS);
+}
+
+// returns same geometric vector in new memory location
+vec2.prototype.clone = function()
+{
+	return new vec2(this.x, this.y);
+}
+
+const VERTEX_RADIUS = 4;
+vec2.prototype.render_solid = function(colorStr, radius = VERTEX_RADIUS)
+{
+	ctx.fillStyle = colorStr;
+	ctx.beginPath();
+	ctx.arc(this.x, this.y, radius, 0, 2*Math.PI);
+	ctx.fill();
+}
+
+vec2.prototype.render_ring = function(colorStr, radius = VERTEX_RADIUS)
+{
+	ctx.strokeStyle = colorStr;
+	ctx.beginPath();
+	ctx.arc(this.x, this.y, radius, 0, 2*Math.PI);
+	ctx.stroke();
+}
+
+// render text at arg world coords
+vec2.prototype.render_text = function(textStr, colorStr)
+{
+	ctx.fillStyle = colorStr;
+	ctx.fillText(textStr, this.x, this.y);
+}
+
+// since console.log(Vertex) doesn't always display correct values
+vec2.prototype.toString = function()
+{
+	return '(('.concat(this.x, ', ', this.y, '); id=', (this.debugId ?? ''), ')');
+}
+
+// only renders debugId text; does NOT render vertex itself
+vec2.prototype.render_debug_id = function(colorStr)
+{
+	this.render_offset_legend_text(this.debugId, colorStr, get_legend_offset(this.debugId.toString()));
+}
+
+// constructor
+function LineSeg(r1, r2, debugId = undefined)
+{
+	this.r1 = r1;
+	this.r2 = r2;
+	this.debugId = debugId;
+}
+LineSeg.prototype.render = function(colorStr, radius = undefined)
+{
+	ctx.strokeStyle = colorStr;
+	ctx.beginPath();
+	ctx.moveTo(this.r1.x, this.r1.y);
+	ctx.lineTo(this.r2.x, this.r2.y);
+	ctx.stroke();
+	if (radius != undefined)
+	{
+		this.r1.render_solid(colorStr, radius);
+		this.r2.render_solid(colorStr, radius);
+	}
+}
+
+// render positive&negative [sawtooth wave with arg num periods], similar to sin wave, along *this* LineSeg to distinguish from other collinear line segs
+// nPeriods is positive integer or positive half-[odd integer]
+// amplitude radio is amplitude/lineSegLength
+LineSeg.prototype.render_saw = function(colorStr = '#000000FF', nPeriods = 10, amplitudeRatio = 1/35.4, vertexRadius1 = undefined, vertexRadius2 = undefined){
+	const lineDirec = this.r2.subtract(this.r1);
+	if (amplitudeRatio == undefined){
+		amplitudeRatio = lineDirec.len()/35.4;
+	}
+	normal = lineDirec.mult(amplitudeRatio);	// euclidean length == amplitude
+	normal = new vec2(normal.y, -normal.x);
+	
+	const SAW_START_PROGRESS = 0.1;	// begin sawtooth at a distance from vertex, to display correct lineseg angle near vertex
+	let nHumps = Math.floor(2*nPeriods);
+	let progressArr = new Array(nHumps).fill(0).map( (val, index) => (index+0.5)/nHumps*(1-2*SAW_START_PROGRESS)+SAW_START_PROGRESS );	// linearly interpolate [evenly-distributed progress] between (SAW_START_PROGRESS) and (1-SAW_START_PROGRESS)
+	
+	ctx.strokeStyle = colorStr;
+	ctx.beginPath();
+	ctx.moveTo(this.r1.x, this.r1.y);
+	let vSawStart = lineDirec.mult(SAW_START_PROGRESS).add(this.r1);
+	ctx.lineTo(vSawStart.x, vSawStart.y);
+	for(let i = 0; i < progressArr.length; ++i)
+	{
+		let v = lineDirec.mult(progressArr[i]).add(this.r1).add(normal.mult(i % 2 == 0 ? 1 : -1));
+		ctx.lineTo(v.x, v.y);
+	}
+	let vSawEnd = lineDirec.mult(1-SAW_START_PROGRESS).add(this.r1);
+	ctx.lineTo(vSawEnd.x, vSawEnd.y);
+	ctx.lineTo(this.r2.x, this.r2.y);
+	ctx.stroke();
+	
+	if (vertexRadius1 != undefined)
+	{
+		this.r1.render_ring(colorStr, vertexRadius1);
+		if (vertexRadius2 != undefined){
+			this.r2.render_ring(colorStr, vertexRadius2);
+		}else{
+			this.r2.render_ring(colorStr, vertexRadius1);
+		}
+	}
+}
+
+LineSeg.prototype.toString = function()
+{
+	return '( '.concat(this.r1.toString(), ' to ', this.r2.toString(), '; id=', (this.debugId ?? ''), ' )');
+}
+
+// lehmer linear congruential generator
+// returns nArgs psuedorandom numbers uniformly distributed in [0, 1)
+// m is prime, and multiplier is largest int (mod m) with largest multiplicative order mod m
+// by design, seed is coprime to RNG_MOD
+const RNG_MULTIPLIER = 134;
+const RNG_MOD = 137;
+const RNG_OFFSET = 8;	// 2^RNG_OFFSET > RNG_MOD
+function rng(seedStr, nArgs = 1)
+{
+	if (nArgs <= 0){
+		throw 'cannot generate non-positive quantity of random numbers';
+	}
+	
+	// convert seedStr to hash mod RNG_MOD
+	let powMod = 1;
+	let hash = seedStr.charCodeAt(0);
+	for(let i = 1; i < seedStr.length; ++i)
+	{
+		powMod = (128*powMod) % RNG_MOD;
+		hash += seedStr.charCodeAt(i)*powMod;	// hash = s[0] + s[1]*128^1 + s[2]*128^2 + s[3]*128^3 + ... + s[n]*128^n (mod RNG_MOD)
+		// 128 because alphabet ascii is in range [32, 126]
+	}
+	let x = hash % RNG_MOD;	// seed
+	
+	// offset a fixed number of terms in order to countert initial predictability
+	for(let i = 0; i < RNG_OFFSET; ++i){
+		x = x*RNG_MULTIPLIER % RNG_MOD;
+	}
+	
+	let rNums = [];
+	for(let i = 0; i < nArgs; ++i){
+		x = x*RNG_MULTIPLIER % RNG_MOD;
+		rNums.push(x);
+	}
+	
+	return rNums.map(x => x/RNG_MOD);
+}
+
+function lerp(a, b, x)
+{
+	return a*(1-x) + b*x;
+}
+
+// returns float uniformly distributed in [minimum, maximum)
+function rnd_btwn(minimum, maximum)
+{
+	return (maximum-minimum)*Math.random() + minimum;
+}
+
+// compute pseudorandom random unit vector seeded by seedStr, oscillating in angle via two sinusoids, based on current frame
+// returns vec2
+function get_legend_offset(seedStr)
+{
+	const LEGEND_OFFSET_DIST = 38;
+	const MIN_OMEGA_1 = 0.006;
+	const MAX_OMEGA_1 = 0.007;
+	const MIN_OMEGA_2 = 0.011;
+	const MAX_OMEGA_2 = 0.012;
+	let [r1, r2, r3, r4] = rng(seedStr, 4);
+	let [w1, w2, phi1, phi2] = [lerp(MIN_OMEGA_1, MAX_OMEGA_1, r1), lerp(MIN_OMEGA_2, MAX_OMEGA_2, r2), lerp(0, 2*Math.PI, r3), lerp(0, 2*Math.PI, r4)];
+	let theta = lerp(0, 2*Math.PI, 0.5*(Math.sin(w1*debugFrame + phi1) + Math.sin(w2*debugFrame + phi2)) + 1);
+	return new vec2(Math.cos(theta), Math.sin(theta)).mult(LEGEND_OFFSET_DIST);
+}
+
+// render text offset by offsetVec (in onscreen pixel coords)
+// and render thin lineSeg connecting *this* vector and text location
+vec2.prototype.render_offset_legend_text = function(textStr, colorStr = '#000000FF', offsetVec = undefined)
+{
+	let v2 = this.add(offsetVec ?? new vec2(0, 0));
+	v2.render_text(textStr, colorStr);
+
+	const TEXT_LEGEND_LINE_WIDTH = 0.9;
+	ctx.lineWidth = TEXT_LEGEND_LINE_WIDTH;
+	new LineSeg(this, v2).render(colorStr);
+	ctx.lineWidth = UNIVERSAL_LINE_WIDTH;
+};
+
+// render debugId and midpoint ONLY; do not render endpoints nor lineSeg
+LineSeg.prototype.render_debug_id = function(colorStr = '#000000FF')
+{
+	let mid = this.r1.add(this.r2).mult(0.5);
+	const lineDirec = this.r2.subtract(this.r1);
+	if (vec2.is_same_loc(lineDirec, new vec2(0, 0)))	// if lineSeg is single point, then no normal line segment jutting out
+	{
+		mid.render_text(this.debugId, colorStr);
+	}
+	else
+	{
+		const MIDPOINT_RADIUS = 3.5;
+		mid.render_solid(colorStr, MIDPOINT_RADIUS);
+		mid.render_offset_legend_text(this.debugId, colorStr, get_legend_offset(this.debugId.toString()));
+	}
+}
+
+// constructor
+function Rect(x, y, w, h)
+{
+	this.x = x;
+	this.y = y;
+	this.w = w;
+	this.h = h;
+}
+
+
+// returns an Image(), possibly not yet loaded
+function load_image(filepath){
+	var img = document.createElement("img");
+	img.src = filepath;
+	img.onload = function(){
+		img.isLoaded = true;
+	};
+	img.isLoaded = false;	// custom member
+	return img;
+}
+
+function load_image_from_svg_string(src){
+	var img = document.createElement("img");
+	img.src = `data:image/svg+xml;base64,${btoa(src)}`;
+	img.onload = function(){
+		img.isLoaded = true;
+	};
+	img.isLoaded = false;	// custom member
+	return img;
+}
+
+// Blit an image to the canvas
+// alpha is a float in the range [0, 1]
+function apply_image(img, x, y, alpha = 1.0){
+	if (img.isLoaded || img instanceof HTMLCanvasElement){
+		if (alpha == 1.0){
+			ctx.drawImage(img, x, y);
+		}else{
+			let cv = document.createElement("canvas");
+			cv.width = img.width;
+			cv.height = img.height;
+			
+			let cx = cv.getContext("2d");
+			cx.globalAlpha = alpha;
+			cx.drawImage(img, 0, 0);
+			ctx.drawImage(cv, x, y);	// must render to a 2nd canvas and then render the 2nd canvas to the screen, since globalAlpha is the only way to use transparency
+		}
+	}else{
+		throw "cannot draw non-loaded image!";
+	}
+}
+
+// Blit frontImg onto rearImg with frontImg's alpha in the range [0, 1]
+// if srcRect is undefined, then blit [the entire frontImg] onto rearImg
+// returns new image
+function apply_image_to_image(frontImg, rearImg, alpha, srcRect, dstRect){
+	if (!(frontImg.isLoaded || frontImg instanceof HTMLCanvasElement) || !(rearImg.isLoaded || rearImg instanceof HTMLCanvasElement)){
+		throw "cannot draw non-loaded image!";
+	}
+		
+	let cv = document.createElement("canvas");
+	cv.width = rearImg.width;
+	cv.height = rearImg.height;
+	let cx = cv.getContext("2d");
+	cx.drawImage(rearImg, 0, 0);
+	if (alpha > 0.0){
+		cx.globalAlpha = alpha;
+		if (srcRect != undefined){
+			cx.drawImage(frontImg, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstRect.x, dstRect.y, dstRect.w, dstRect.h);
+		}else{
+			cx.drawImage(frontImg, dstRect.x, dstRect.y, dstRect.w, dstRect.h);
+		}
+	}
+	return cv;
+}
+
+// apply image to screen with alpha in [0, 1]
+// must specify srcRect and dstRect
+function apply_image_precise(img, alpha, srcRect, dstRect){
+	if (img.isLoaded || img instanceof HTMLCanvasElement){
+		if (alpha == 1.0){
+			ctx.drawImage(img, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstRect.x, dstRect.y, dstRect.w, dstRect.h);
+		}else if(alpha > 0.0){
+			let cv = document.createElement("canvas");
+			cv.width = img.width;
+			cv.height = img.height;
+			
+			let cx = cv.getContext("2d");
+			cx.globalAlpha = alpha;
+			cx.drawImage(img, 0, 0);
+			ctx.drawImage(cv, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstRect.x, dstRect.y, dstRect.w, dstRect.h);
+		}
+	}else{
+		throw "cannot draw non-loaded image!";
+	}
+}
+
+// Blit frontImg onto rearImg with frontImg's alpha in the range [0, 1]
+// returns temporary new image
+//     "temporary" meaning the returned image is reset each time you call apply_image_to_image_temp()
+// doesn't affect original frontImg nor rearImg
+// if rearOnlyDst is true, result is only the portion of the combined image delineated by dstRect, including [area in frontImg but not in rearImg]
+// if rearOnlyDst is false, result is the entire combined image
+function apply_image_to_image_temp(frontImg, rearImg, alpha, srcRect, dstRect, rearOnlyDst = false){
+	if (!(frontImg.isLoaded || frontImg instanceof HTMLCanvasElement) || !(rearImg.isLoaded || rearImg instanceof HTMLCanvasElement)){
+		throw "cannot draw non-loaded image!";
+	}
+	if (rearOnlyDst){
+		tempCv.width = dstRect.w;
+		tempCv.height = dstRect.h;
+		tempCx.globalAlpha = 1.0;
+		tempCx.drawImage(rearImg, 0, 0);
+		tempCx.globalAlpha = alpha;
+		tempCx.drawImage(frontImg, srcRect.x, srcRect.y, srcRect.w, srcRect.h, 0, 0, dstRect.w, dstRect.h);
+	}else{
+		tempCv.width = rearImg.width;
+		tempCv.height = rearImg.height;
+		tempCx.globalAlpha = 1.0;
+		tempCx.drawImage(rearImg, 0, 0);
+		tempCx.globalAlpha = alpha;
+		tempCx.drawImage(frontImg, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstRect.x, dstRect.y, dstRect.w, dstRect.h);
+	}
+	return tempCv;
+}
+
+function convert_image_to_canvas(img){
+	if (img instanceof HTMLCanvasElement){
+		return img;
+	}else if(!img.isLoaded){
+		throw "cannot convert non-loaded image to canvas!";
+	}
+	
+	var cv = document.createElement("canvas");	// use this canvas instead of creating a new canvas every time you blit transparency
+	cv.width = img.width;
+	cv.height = img.height;
+	var cx = cv.getContext("2d");
+	cx.drawImage(img, 0, 0);
+	return cv;
+}
+
+function calculate_canvas_corner()
+{
+	let rect = canvas.getBoundingClientRect();
+	xCanvas = rect.x;
+	yCanvas = rect.y;
+}
+
+
+// constructor
+// simple polygon of either counterclockwise or clockwise winding
+// arg vertices is array of vec2 objects
+function Polygon(vertices)
+{
+	if (vertices.length < 3){
+		throw 'cannot have polygon with only '.concat(vertices.length, ' vertices; need at least 3');
+	}
+	this.vertices = vertices.slice();	// clone
+}
+
+
+// render line segs only, not vertices nor debugIds
+Polygon.prototype.render = function(lineColorStr = undefined, fillColorStr = undefined)
+{
+	if (lineColorStr == undefined && fillColorStr == undefined)
+	{
+		lineColorStr = '#FF0000FF';
+	}
+	
+	ctx.beginPath();
+	for(let i = 0; i < this.vertices.length+1; ++i){
+		let i1 = i % this.vertices.length;
+		if (i == 0)
+		{
+			ctx.moveTo(this.vertices[i].x, this.vertices[i].y);
+		}
+		else
+		{
+			ctx.lineTo(this.vertices[i1].x, this.vertices[i1].y);
+		}
+	}
+	if (lineColorStr != undefined)
+	{
+		ctx.strokeStyle = lineColorStr;
+		ctx.stroke();
+	}
+	
+	if (fillColorStr != undefined){
+		ctx.fillStyle = fillColorStr;
+		ctx.fill();
+	}
+}
+
+// return new rotated Poylgon; center is vec2
+Polygon.prototype.rotate = function(thetaRad, center)
+{
+	return new Polygon(this.vertices.map(function(v){
+		let v1 = v.subtract(center);
+		let xR = v1.x*Math.cos(thetaRad) - v1.y*Math.sin(thetaRad);
+		let yR = v1.x*Math.sin(thetaRad) + v1.y*Math.cos(thetaRad);
+		return new vec2(xR, yR).add(center);
+	}));
+}
+
+// return new translated polygon
+Polygon.prototype.translate = function(offsetVec)
+{
+	return new Polygon(this.vertices.map(v => v.add(offsetVec)));
+}
+
+// return new scaled polygon
+Polygon.prototype.scale = function(scale)
+{
+	return new Polygon(this.vertices.map(v => v.mult(scale)));
+}
+
+// render debugIds ONLY; do not render polygon vertices nor polygon lineSegs nor polygon fill
+Polygon.prototype.render_debug_ids = function(colorStr = '#DD00CCFF')
+{
+	for(let i in this.vertices)
+	{
+		this.vertices[i].render_text(v.debugId, GREY);
+	}
+}
+
+// returns Polygon object
+Polygon.create_polygon_from_rect = function(rect)
+{
+	return new Polygon([new vec2(rect.x, rect.y),
+						new vec2(rect.x+rect.w, rect.y),
+						new vec2(rect.x+rect.w, rect.y+rect.h),
+						new vec2(rect.x, rect.y+rect.h)]);
+}
+
+function* gen_id(startIndex = 0, prefix = undefined)
+{
+	for(let i = startIndex; true; ++i)
+	{
+		yield (prefix ?? '').concat(i);
+	}
+}
+
+// base class constructor
+function Particle()
+{
+	this.debugId = Particle.particleIdGen.next().value;
+}
+Particle.particleIdGen = gen_id(0);	// static member
+
+Particle.prototype.is_dead = function()
+{
+	throw "un-overridden abstract base class method is_dead()";
+}
+
+Particle.prototype.get_y_priority = function()
+{
+	throw "un-overridden abstract base class method get_y_priority()";
+}
+
+Particle.prototype.update = function()
+{
+	throw "un-overridden abstract base class method update()";
+}
+
+Particle.prototype.render = function()
+{
+	throw "un-overridden abstract base class method render()";
+}
+
+// constructor
+// doesn't interact with other Particles
+const INITIAL_LIFE = 31;
+const FRICTION = 0.925;
+const ANGULAR_FRICTION = 0.945;
+function BouncingShape(x, y, vx, vy, omega, polygon){
+	Particle.call(this);
+	this.pos = new vec2(x, y);
+	this.vel = new vec2(vx, vy);
+	this.theta = Math.random()*2*Math.PI;
+	this.omega = omega;
+	this.initPolygon = polygon;
+	this.life = INITIAL_LIFE;	// num frames
+}
+BouncingShape.prototype = Object.create(Particle.prototype);
+
+BouncingShape.prototype.is_dead = function()
+{
+	return this.life <= 0;
+}
+
+BouncingShape.prototype.update = function()
+{
+	--this.life;
+	this.vel = this.vel.mult(FRICTION);
+	this.omega *= ANGULAR_FRICTION;
+
+	this.pos = this.pos.add(this.vel);
+	this.theta += this.omega;
+	
+	// bounce off walls elastically
+	if (this.pos.x < 0){
+		this.pos.x *= -1;
+		this.vel.x *= -1;
+	}
+	if (this.pos.y < 0){
+		this.pos.y *= -1;
+		this.vel.y *= -1;
+	}
+	if (this.pos.x > CANVAS_WIDTH){
+		this.pos.x = CANVAS_WIDTH;
+		this.vel.x *= -1;
+	}
+	if (this.pos.y > CANVAS_HEIGHT){
+		this.pos.y = CANVAS_HEIGHT;
+		this.vel.y *= -1;
+	}
+}
+
+BouncingShape.prototype.render = function()
+{
+	this.initPolygon.rotate(this.theta, new vec2(0, 0)).translate(this.pos).render( 'rgba(125, 25, 74, '.concat(this.life/INITIAL_LIFE, ')') );
+}
+
+// constructor
+function BouncingStar(x, y, vx, vy, omega, polygon)
+{
+	BouncingShape.call(this, x, y, vx, vy, omega, polygon);
+}
+BouncingStar.prototype = Object.create(BouncingShape.prototype);
+
+BouncingStar.prototype.get_y_priority = function()
+{
+	return this.pos.y;
+}
+
+BouncingStar.prototype.render = function()
+{
+	const NUM_LAYERS = 7;
+	for(let i = 0; i < NUM_LAYERS-1; ++i)
+	{
+		let param = i/(NUM_LAYERS-1);
+		let color = `hsla(${lerp(21, 50.0, param)}, 100%, 50%, ${this.life/INITIAL_LIFE})`;	// outer layers are more red than green
+		this.initPolygon.rotate(this.theta, new vec2(0, 0)).scale(lerp(1, 0.15, param)**1.3).translate(this.pos).render(undefined, color);
+	}
+};
+
+BouncingStar.create_star = function(nPoints, x, y, vx, vy, omega, outerRadius = undefined)
+{
+	if (nPoints == undefined || nPoints < 3){
+		throw "cannot create bouncing star with <3 points";
+	}
+
+	if (outerRadius == undefined){
+		const DEFAULT_OUTER_RADIUS = 20.0;
+		outerRadius = DEFAULT_OUTER_RADIUS;
+	}
+	const INNER_RADIUS = outerRadius*0.6;
+	const OUTER_RADIUS = outerRadius;
+	let vertices = [];
+	for(let i = 0; i < 2*nPoints; ++i)
+	{
+		let radius = i % 2 == 0 ? OUTER_RADIUS : INNER_RADIUS;
+		vertices.push(new vec2(Math.cos(i/2/nPoints*2*Math.PI)*radius, Math.sin(i/2/nPoints*2*Math.PI)*radius));
+	}
+	let polygon = new Polygon(vertices);
+	return new BouncingStar(x, y, vx, vy, omega, polygon);
+}
+
+MAX_NUM_PARTICLES = 1000;
+// constructor
+function ParticleEngine()
+{
+	this.particles = [];
+}
+
+ParticleEngine.prototype.add_particle = function(particle)
+{
+	if (this.particles.length >= MAX_NUM_PARTICLES){
+		console.log("too many particles; ignored adding another");
+	}
+	this.particles.push(particle);
+}
+
+ParticleEngine.prototype.update = function()
+{
+	this.particles.forEach(p => p.update());
+	this.particles = this.particles.filter(p => !p.is_dead());
+}
+
+ParticleEngine.prototype.render = function()
+{
+	// lower y-position priority gets rendered first, and higher y-position priority gets rendered on top of lower priority Particles
+	this.particles.sort((a, b) => a.get_y_priority() - b.get_y_priority()).forEach( p => p.render() );
+}
+
+// arg is vec2
+ParticleEngine.prototype.create_star_explosion = function(pos)
+{
+	const NUM_STARS = 5;
+	const NUM_STAR_POINTS = 5;
+	const MAX_STAR_SPEED = 3.0;
+	const MAX_STAR_OMEGA = 0.22;
+	const MIN_STAR_OUTER_RADIUS = 4.0;
+	const MAX_STAR_OUTER_RADIUS = 14.0;
+	for(let i = 0; i < NUM_STARS; ++i)
+	{
+		let vx = MAX_STAR_SPEED*(Math.random()*2 - 1);
+		let vy = MAX_STAR_SPEED*(Math.random()*2 - 1);
+		let omega = MAX_STAR_OMEGA*(Math.random()*2-1);
+		let outerRadius = rnd_btwn(MIN_STAR_OUTER_RADIUS, MAX_STAR_OUTER_RADIUS);
+		let bouncingStar = BouncingStar.create_star(NUM_STAR_POINTS, pos.x, pos.y, vx, vy, omega, outerRadius);
+		this.add_particle(bouncingStar);
+	}
+}
+
+const NUM_FRAMES_PER_FPS_UPDATE = 20;
+let prevFrameTime = 0;
+let gamePaused = false;
+let mustImmediatePause = false;	// for advancing 1 frame
+let debugFlailPaused = false;
+
+let mouseLoc = new vec2(0, 0);	// world coords
+let mouseDownLoc;	// vec2; undefined if mouse is not down; world coords
+let cannonBarrelRecoilPos = 0.0;
+let cannonTheta = Math.PI;	// points upward before mouse moves
+const CANNON_X = CANVAS_WIDTH/2;	// center of cannon base
+const CANNON_Y = CANVAS_HEIGHT*3/4;
+let cannonReloadFramesRemaining = 0;
+let particleEngine = new ParticleEngine();
+const CANNON_BASE_RADIUS = 40;
+
+// returns boolean whether two moving circles will be intersecting at some time within [0, 1)
+// circle centers at time t=0 are p1, p2
+// circle velocities are v1, v2
+// circle radii are r1, r2
+function are_circles_colliding(p1, p2, v1, v2, r1, r2)
+{
+	// |(p1+v1*t) - (p2+v2*t)|^2 = (r1+r2)^2	is eqn for when dist btwn circle centers equals sum of radii
+	// |(p1-p2) + (v1-v2)t|^2 - (r1+r2)^2 = 0
+	// |p1-p2|^2 + 2*t*dot(p1-p2, v1-v2) + t^2 *|v1-v2|^2 - (r1+r2)^2 = 0	using dot(a, a) == |a|^2
+	// a*t^2 + b*t + c = 0 via quadratic formula, where:
+	//		a = |v1-v2|^2
+	//		b = 2*dot(p1-p2, v1-v2)
+	//		c = |p1-p2|^2 - (r1+r2)^2
+	let pp = p1.subtract(p2);
+	let vv = v1.subtract(v2);
+	let a = vv.len_sq();
+	let b = 2*vec2.dot(pp, vv);
+	let c = pp.len_sq() - (r1+r2)**2;
+	if (a == 0)
+	{
+		// circles not moving relative to each other
+		return c <= 0;
+	}
+	
+	let discriminant = b*b - 4*a*c;
+	if (discriminant < 0)
+	{
+		// circles never intersect at any time t
+		return false;
+	}
+	let t1 = (-b - Math.sqrt(discriminant))/(2*a);
+	let t2 = (-b + Math.sqrt(discriminant))/(2*a);
+	return t1 < 1 && t2 >= 0;
+}
+
+// returns vec2 that is the pro-rated boundary between two circles with centers (p1, p2) and radii (r1, r2)
+function get_circle_collision_loc(p1, p2, r1, r2)
+{
+	if (r1 + r2 == 0)
+	{
+		return p1;
+	}
+	return p1.add( p2.subtract(p1).mult(r2/(r1+r2)) );
+}
+
+// constructor
+// circle with radius, at position pos, moving with velocity vel
+function MovingParticle(pos, vel, radius)
+{
+	Particle.call(this);
+	this.pos = pos;
+	this.vel = vel;
+	if (radius < 0)
+	{
+		throw new Error("radius cannot be negative");
+	}
+	this.radius = radius;
+	this.isActive = true;	// can be manually deactivated to request erasure from particle engine
+}
+MovingParticle.prototype = Object.create(Particle.prototype);
+
+// [still onscreen?]
+MovingParticle.prototype.is_dead = function()
+{
+	return !this.isActive ||
+		   this.pos.x < -this.radius ||
+		   this.pos.x > CANVAS_WIDTH + this.radius ||
+		   this.pos.y < -this.radius ||
+		   this.pos.y > CANVAS_HEIGHT + this.radius;
+}
+
+MovingParticle.prototype.get_y_priority = function()
+{
+	return this.pos.y + this.radius;
+}
+
+MovingParticle.prototype.update = function()
+{
+	this.pos.x += this.vel.x;
+	this.pos.y += this.vel.y;
+}
+
+// constructor
+// generic enemy class that specific enemies can subclass
+function Enemy(pos, vel, radius)
+{
+	MovingParticle.call(this, pos, vel, radius);
+}
+Enemy.prototype = Object.create(MovingParticle.prototype);
+
+
+// constructor
+function EnemyCrab(pos, vel, radius)
+{
+	Enemy.call(this, pos, vel, radius);
+	this.startAnimFrame = -99999;	// frame that crab claw pinching animation started
+}
+EnemyCrab.prototype = Object.create(Enemy.prototype);
+
+const TOTAL_ANIM_FRAMES = 20;
+EnemyCrab.prototype.is_animating = function()
+{
+	return frame - this.startAnimFrame < TOTAL_ANIM_FRAMES;
+}
+
+EnemyCrab.prototype.update = function()
+{
+	MovingParticle.prototype.update.call(this);
+	const ANIMATE_PROB = 0.015;
+	if (!this.is_animating() && Math.random() < ANIMATE_PROB)
+	{
+		this.startAnimFrame = frame;
+	}
+}
+
+EnemyCrab.prototype.render = function()
+{
+	/*
+	// render circle hitbox
+	const BULLET_FILL_COLOR = '#DD44EE60';
+	const BULLET_STROKE_COLOR = 'black';
+	this.pos.render_solid(BULLET_FILL_COLOR, this.radius);
+	this.pos.render_ring(BULLET_STROKE_COLOR, this.radius);
+	*/
+	let upperClawTheta = -0.2;
+	let lowerClawTheta = 0.2;
+	if (this.is_animating())
+	{
+		let param = (frame - this.startAnimFrame)/TOTAL_ANIM_FRAMES;
+		const UPPER_CLAW_MAX_AMPLITUDE = 0.2;
+		const LOWER_CLAW_MAX_AMPLITUDE = -0.2;
+		upperClawTheta += UPPER_CLAW_MAX_AMPLITUDE*Math.sin(param*Math.PI);
+		lowerClawTheta += LOWER_CLAW_MAX_AMPLITUDE*Math.sin(param*Math.PI);
+	}
+	upperClawTheta *=  this.vel.x >= 0 ? -1 : 1;
+	lowerClawTheta *=  this.vel.x >= 0 ? -1 : 1;
+	
+	// render crab
+	let picCenter = new vec2(194.80916, 126.4122);
+	let picBottom = new vec2(picCenter.x, picCenter.y+165.49619);
+	let worldPosBottom = new vec2(this.pos.x, this.pos.y + this.radius);
+	draw_image_align_line_segs(crab, picCenter, this.pos, picBottom, worldPosBottom, this.vel.x < 0);
+	
+	// render bottom crab claw
+	let picTip = new vec2(19.1, 60.1);	// image coords
+	let picBase = new vec2(125.4, 138.3);	// image coords
+	let midClawTipNormalized = new vec2(.683 * (this.vel.x < 0 ? -1 : 1),  .487); // normalized coords
+	let clawBase = new vec2(-0.156 * (this.vel.x < 0 ? -1 : 1), 0.400).mult(this.radius).add(this.pos);	// world coords
+	let upperClawTip = midClawTipNormalized.rotate(upperClawTheta).mult(this.radius).add(this.pos);
+	draw_image_align_line_segs(crabClawLower, picTip, upperClawTip, picBase, clawBase, this.vel.x >= 0);
+
+	// render top crab claw
+	let lowerClawTip = midClawTipNormalized = midClawTipNormalized.rotate(lowerClawTheta).mult(this.radius).add(this.pos);
+	picTip = new vec2(10.5, 19.1);	// image coords
+	picBase = new vec2(101.0, 131.2);	// image coords
+	draw_image_align_line_segs(crabClawUpper, picTip, lowerClawTip, picBase, clawBase, this.vel.x >= 0);
+	
+	// render small crab claw
+	picTip  = new vec2(30, 30);		// image coords
+	picBase = new vec2(140, 133);	// image coords
+	let clawTip  = new vec2(1.2   * (this.vel.x < 0 ? -1 : 1), -0.262).mult(this.radius).add(this.pos);	// world coords
+	clawBase = new vec2(0.756 * (this.vel.x < 0 ? -1 : 1), -0.323).mult(this.radius).add(this.pos);	// world coords
+	draw_image_align_line_segs(crabClawWhole, picTip, clawTip, picBase, clawBase, this.vel.x < 0);
+}
+
+// constructor
+const FROG_JUMP_PERIOD = 120;
+const FROG_JUMP_ARC_DURATION = 90;
+function EnemyFrog(pos, jumpDisplacement, radius, initialJumpDelayFrames)
+{
+	Enemy.call(this, pos, new vec2(0, 0), radius);
+	this.jumpDisplacement = jumpDisplacement;	// vec2 in world coords that frog moves each time it jumps
+	this.lastGroundPos = pos.clone();	// position where frog last touched ground, in world coords
+	this.isJumping = false;
+	this.lastJumpFrame = frame + FROG_JUMP_PERIOD - initialJumpDelayFrames;
+	this.groundPos = pos.clone();	// current position projected onto the ground
+}
+EnemyFrog.prototype = Object.create(Enemy.prototype);
+
+// [still onscreen?] using groundPos
+EnemyFrog.prototype.is_dead = function()
+{
+	return !this.isActive ||
+		   this.groundPos.x < -this.radius ||
+		   this.groundPos.x > CANVAS_WIDTH + this.radius ||
+		   this.groundPos.y < -this.radius ||
+		   this.groundPos.y > CANVAS_HEIGHT + this.radius;
+}
+
+EnemyFrog.prototype.get_y_priority = function()
+{
+	return this.pos.y + (417-263.2)/282*this.radius;	// y-position at bottom of feet
+}
+
+EnemyFrog.prototype.update = function()
+{
+	if(!this.isJumping && frame >= this.lastJumpFrame + FROG_JUMP_PERIOD)
+	{
+		this.lastJumpFrame = frame;
+		this.isJumping = true;
+	}
+	
+	if (this.isJumping)
+	{
+		// frog parabolically jumps toward cannon
+		const FROG_JUMP_HEIGHT_RATIO = 1.0; // ratio of height between [zeros of parabola and vertex of parabola] and [distance between zeros of parabola]
+		// jump of height 1 follows arc x*(a - x)/(a/2)^2, where x=0 and x=a are zeros of upside-down parabola
+		let param = (frame - this.lastJumpFrame)/FROG_JUMP_ARC_DURATION;
+		this.groundPos = this.lastGroundPos.add( this.jumpDisplacement.mult(param) );
+		this.pos = this.groundPos.add( new vec2(0, -FROG_JUMP_HEIGHT_RATIO*this.jumpDisplacement.len()*param*(1-param)*4) );
+		this.vel = this.jumpDisplacement.mult(1/FROG_JUMP_ARC_DURATION);
+		if (frame >= this.lastJumpFrame + FROG_JUMP_ARC_DURATION)
+		{
+			this.isJumping = false;
+			this.lastGroundPos = this.pos;
+		}
+	}
+}
+
+EnemyFrog.prototype.render = function()
+{
+	let frogPic0 = new vec2(120, 26);	// tip of middle of nose
+	let frogPic1 = new vec2(120, 153);	// bottom of middle of belly
+	let frogNorm0 = new vec2((247-260.9)/282, (58-263.2)/282);
+	let frogNorm1 = new vec2((247-260.9)/282, (320-263.2)/282);
+	let shadowNorm0 = new vec2((259-260.9)/282, (307.7-260.9)/282);	// center of shadow
+	let shadowDst0 = shadowNorm0.mult(this.radius).add(this.groundPos);
+	let standShadowNorm1 = new vec2((428.5-260.9)/282, (307.7-260.9)/282);	// rightmost point of shadow
+	const CAMERA_VIEW_FACTOR = Math.SQRT1_2;	// if camera looks down with declination angle theta, then a vertical height h is projected onto one [diagonal pixel orthogonal to camera's line of sight] of length h*sin(theta)
+	if (this.isJumping)
+	{
+		// render jumping frog's shadow
+		let jumpShadowPic0 = new vec2(261/2, 97/2);
+		let jumpShadowPic1 = new vec2(261, 97/2);
+		let jumpShadowNorm1 = new vec2(standShadowNorm1.x*0.75, standShadowNorm1.y);
+		let jumpShadowDst1 = jumpShadowNorm1.mult(this.radius).add(this.groundPos);
+		draw_image_align_line_segs(frogJumpShadow, jumpShadowPic0, shadowDst0, jumpShadowPic1, jumpShadowDst1);
+		
+		// render jumping frog
+		let frogJumpDst0 = frogNorm0.mult(this.radius).add(this.pos);
+		let frogJumpDst1 = frogNorm1.mult(this.radius).add(this.pos);
+		draw_image_align_line_segs(frogJump, frogPic0, frogJumpDst0, frogPic1, frogJumpDst1);
+	}
+	else
+	{
+		// render standing frog's shadow
+		let standShadowPic0 = new vec2(170, 64);
+		let standShadowPic1 = new vec2(340, 64);
+		let standShadowNorm1 = new vec2((428.5-260.9)/282, (307.7-260.9)/282);	// rightmost point of shadow
+		let standShadowDst1 = standShadowNorm1.mult(this.radius).add(this.groundPos);
+		draw_image_align_line_segs(frogStandShadow, standShadowPic0, shadowDst0, standShadowPic1, standShadowDst1);
+		
+		// render standing frog
+		let frogStandDst0 = frogNorm0.mult(this.radius).add(this.pos);
+		let frogStandDst1 = frogNorm1.mult(this.radius).add(this.pos);
+		draw_image_align_line_segs(frogStand, frogPic0, frogStandDst0, frogPic1, frogStandDst1);
+	}
+}
+
+function Bullet(pos, vel, radius)
+{
+	MovingParticle.call(this, pos, vel, radius);
+}
+Bullet.prototype = Object.create(MovingParticle.prototype);
+
+Bullet.prototype.render = function()
+{
+	const BULLET_FILL_COLOR = '#A3A4A560';
+	const BULLET_STROKE_COLOR = 'black';
+	this.pos.render_solid(BULLET_FILL_COLOR, this.radius);
+	this.pos.render_ring(BULLET_STROKE_COLOR, this.radius);
+}
+
+// constructor
+// sinusoidally bobbing back and forth around equilibTheta with angular amplitude, with angular frequency omega, starting at phase theta0
+function GrassBlade(rootPos, bladeLen, theta0, omega, amplitude, equilibTheta, colorStr)
+{
+	Particle.call(this);
+	this.rootPos = rootPos;	// vec2
+	this.bladeLen = bladeLen;
+	this.inTheta = theta0;	// increases linearly over time
+	this.omega = omega;
+	this.equilibTheta = equilibTheta;
+	this.amplitude = amplitude;
+	this.colorStr = colorStr;
+}
+GrassBlade.prototype = Object.create(Particle.prototype);
+
+GrassBlade.prototype.is_dead = () => false;
+
+GrassBlade.prototype.get_y_priority = function()
+{
+	return this.rootPos.y;
+}
+
+GrassBlade.prototype.update = function()
+{
+	this.inTheta += this.omega;
+}
+
+GrassBlade.prototype.render = function()
+{
+	const PERPENDICULAR_SHRINK = 0.125;
+	let outTheta = this.amplitude * Math.cos(this.inTheta);
+	let lengthwise = new vec2(this.bladeLen, 0).rotate(this.equilibTheta + outTheta);
+	let tip = this.rootPos.add(lengthwise);
+	let perp = lengthwise.rotate(Math.PI/2).mult(PERPENDICULAR_SHRINK);	// blade of grass is thinner rather than fatter
+	let c1 = this.rootPos.add(lengthwise.mult(1/6)).add(perp);
+	let c2 = this.rootPos.add(lengthwise.mult(1/2)).add(perp);
+	let c3 = this.rootPos.add(lengthwise.mult(1/2)).add(perp.mult(-1));
+	let c4 = this.rootPos.add(lengthwise.mult(1/6)).add(perp.mult(-1));
+	
+	ctx.fillStyle = this.colorStr;
+	ctx.beginPath();
+	ctx.moveTo(this.rootPos.x, this.rootPos.y);
+	ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y,          tip.x,          tip.y);
+	ctx.bezierCurveTo(c3.x, c3.y, c4.x, c4.y, this.rootPos.x, this.rootPos.y);
+	ctx.fill();
+}
+
+// constructor
+function SmokePuff(pos, vel, radius, rgbColorStr, lifeTime)
+{
+	MovingParticle.call(this, pos, vel, radius);
+	this.initRadius = radius;
+	this.lifeTime = lifeTime;
+	this.initLifeTime = lifeTime;
+	this.rgbColorStr = rgbColorStr;
+}
+SmokePuff.prototype = Object.create(MovingParticle.prototype);
+
+SmokePuff.prototype.is_dead = function()
+{
+	return this.lifeTime <= 0 || MovingParticle.prototype.is_dead.call(this);
+}
+
+SmokePuff.prototype.update = function()
+{
+	--this.lifeTime;
+	MovingParticle.prototype.update.call(this);
+}
+
+SmokePuff.prototype.render = function()
+{
+	let invParam = this.lifeTime/this.initLifeTime;
+	let param = 1 - invParam;
+	let radius = (1-param**6)*this.initRadius;
+	let color = `${this.rgbColorStr}${Math.floor(invParam*204).toString(16).padStart(2, '0')}`
+	this.pos.render_solid(color, radius);
+}
+
+// constructor
+function Camera()
+{
+	this.topLeft = new vec2(0, 0);	// vec2; world coords
+	this.topLeftDst = new vec2(0, 0);	// vec2; world coords
+	this.zoomExpon = 0.0;	// multiplicative zoom factor == 2^zoomExpon; camera width (in world coords) is CANVAS_WIDTH*2^-zoomExpon
+	this.zoomExponDst = 0.0;
+	this.startShakeFrame = 0;
+	this.shakeDuration = 0;	// number of frames
+	this.shakeAmplitude = 0;	// world units
+	this.numFramesPerJolt = 1;
+}
+
+// internal zoom function
+// adjust zoom exponent by arg
+// worldFixedPos is world coords of point that transforms to same screen coords before/after zoom
+// using world-to-screen transform, (f-t)*2^z == (f-t')*2^z', where
+//		f is fixed point's world coords
+//		t is world coords of topLeft before zoom
+//		t' is world coords of topLeft after zoom
+// then we solve for t' = f - (f-t)*2^z/2^z
+const CAMERA_ZOOM_RATE = 0.07;
+Camera.prototype.zoom = function(plusZoomExpon, worldFixedPos)
+{
+	this.zoomExponDst += plusZoomExpon;
+	this.topLeftDst = worldFixedPos.subtract( worldFixedPos.subtract(this.topLeftDst).mult(2**-plusZoomExpon) );
+}
+
+// external-facing zoom function
+Camera.prototype.zoom_in = function(screenFixedPos)
+{
+	this.zoom(CAMERA_ZOOM_RATE, screenFixedPos);
+}
+
+// external-facing zoom function
+Camera.prototype.zoom_out = function(screenFixedPos)
+{
+	this.zoom(-CAMERA_ZOOM_RATE, screenFixedPos);
+}
+
+Camera.prototype.reset_camera = function()
+{
+	this.zoomExponDst = 0.0;
+	this.topLeftDst.x = 0.0;
+	this.topLeftDst.y = 0.0;
+}
+
+// deltaScreenCoords is vec2
+// moves camera in the direct of deltaScreenCoords
+Camera.prototype.pan = function(deltaScreenCoords)
+{
+	this.topLeftDst = this.topLeftDst.add(deltaScreenCoords.mult(2**-this.zoomExpon));
+}
+
+Camera.prototype.set_transform_matrix = function()
+{
+	// matrix converts draw calls (world coords) to screen coords
+	ctx.setTransform(2**this.zoomExpon, 0, 0, 2**this.zoomExpon, -this.topLeft.x*2**this.zoomExpon, -this.topLeft.y*2**this.zoomExpon);
+}
+
+// returns vec2 in world coords
+Camera.prototype.screen_to_world_coords = function(screenPos)
+{
+	return screenPos.mult(2**-this.zoomExpon).add(this.topLeft);
+}
+
+// returns vec2 in screen coords
+Camera.prototype.world_to_screen_coords = function(worldPos)
+{
+	return worldPos.subtract(this.topLeft).mult(2**this.zoomExpon);
+}
+
+Camera.prototype.update = function()
+{
+	// exponentially decay towards destination zoom & destination topLeft
+	const PAN_DECAY_FACTOR = 0.87;
+	this.topLeft = this.topLeftDst.add(this.topLeft.subtract(this.topLeftDst).mult(PAN_DECAY_FACTOR));
+	
+	const ZOOM_DECAY_FACTOR = 0.87;
+	this.zoomExpon = this.zoomExponDst + (this.zoomExpon - this.zoomExponDst)*ZOOM_DECAY_FACTOR
+	
+	// shake camera
+	if (frame < this.startShakeFrame + this.shakeDuration && frame % this.numFramesPerJolt == 0)
+	{
+		let theta = 2*Math.PI*Math.random();
+		this.topLeft = this.topLeft.add( new vec2( this.shakeAmplitude*Math.cos(theta), this.shakeAmplitude*Math.sin(theta) ) );
+	}
+}
+
+// request shaking camera topLeftDst for shakeDuration frames with radial amplitude (in world units) before decaying back to normal camera position
+Camera.prototype.start_shake = function(shakeDuration, amplitude, numFramesPerJolt)
+{
+	this.startShakeFrame = frame;
+	this.shakeDuration = shakeDuration;
+	this.shakeAmplitude = amplitude;
+	this.numFramesPerJolt;
+}
+let camera = new Camera();
+let lastCannonHurtFrame = -99999;
+const CANNON_HURT_DURATION = 120;	// flashing invincibility duration frames
+const CANNON_FLASH_PERIOD = 20.4;	// duration in frames
+
+let crab = load_image('crabBitmap.png');
+let crabClawUpper = load_image('crab claw upper bitmap.png');
+let crabClawLower = load_image('crab claw lower bitmap.png');
+let crabClawWhole = load_image('crab claw whole bitmap.png');
+let frogStand = load_image('frogStand.png');
+let frogJump = load_image('frogJump.png');
+let frogStandShadow = load_image('frogStandShadow.png');
+let frogJumpShadow = load_image('frogJumpShadow.png');
+
+// draws arg img such that the lineSeg (pic0, pic1) treated as world coords, lines up exactly with [the lineSeg (dst0, dst1) in world coords]
+// reflects images about lineSeg iff boolean arg mustReflect is true
+function draw_image_align_line_segs(img, pic0, dst0, pic1, dst1, mustReflect = false)
+{
+	if (vec2.is_same_loc(pic0, pic1))
+	{
+		throw new Error('stretch src picture infinitely to match dst0&dst1 markers');
+	}
+	
+	let m = ctx.getTransform();
+	let deltaPic = pic1.subtract(pic0);
+	let deltaDst = dst1.subtract(dst0);
+	let thetaPic = Math.atan2(deltaPic.y, deltaPic.x);
+	let thetaDst = Math.atan2(deltaDst.y, deltaDst.x);
+	
+	// apply transformation in reverse, since transformation matrix is right-multiplied by new transformations, like in openGL
+	// Transformation: 	Translate so that pic0 is at origin.
+	//		Then rotate src img so that pic0&pic1 lineSeg is aligned with positive x-axis, then reflect about x-axis if needed.
+	//		Then scale to correct scale. Then rotate so that pic0&pic1 lineSeg is parallel with dst0&dst1 lineseg.
+	//		Finally, translate pic0 (at origin) to dst0.
+	ctx.translate(dst0.x, dst0.y);
+	ctx.rotate(thetaDst);
+	let scaleFactor = deltaDst.len()/deltaPic.len();
+	ctx.scale(scaleFactor, scaleFactor);
+	if (mustReflect)
+	{
+		ctx.transform(1, 0, 0, -1, 0, 0);
+	}
+	ctx.rotate(-thetaPic);
+	ctx.translate(-pic0.x, -pic0.y);
+	apply_image(img, 0, 0);
+	ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);		// reset transformation matrix
+}
+
+// load for future use but do not play right now
+function load_sound_from_file(path)
+{
+	let audio = new Audio(path);
+}
+
+function play_sound_from_file(path)
+{
+	let audio = new Audio(path);
+	audio.addEventListener('loadeddata', function(){
+		audio.play();
+	});
+}
+let thudSoundPath = 'thud2.wav';
+load_sound_from_file(thudSoundPath);
+let snareSoundPath = 'snare.wav';
+load_sound_from_file(snareSoundPath);
+let spitSoundPath = 'spit.wav';
+load_sound_from_file(spitSoundPath);
+
+var game = {
+	// set canvas and create Context
+	
+	setup: function(){
+		canvas = document.getElementById("myCanvas");
+		canvas.width = CANVAS_WIDTH;
+		canvas.height = CANVAS_HEIGHT;
+		ctx = canvas.getContext("2d");
+		canvas.style.width = CANVAS_WIDTH.toString() + "px";
+		canvas.style.height = CANVAS_HEIGHT.toString() + "px";
+		calculate_canvas_corner();
+		
+		// handle mouse motion
+		window.addEventListener('mousemove', function(e){
+			xMouse = e.clientX - xCanvas;	// no need to add/subtract window.pageXOffset, because xCanvas already accounts for page offset
+			yMouse = e.clientY - yCanvas;
+			
+			// handle mouse motion here
+			mouseLoc.x = xMouse;
+			mouseLoc.y = yMouse;
+			mouseLoc = camera.screen_to_world_coords(mouseLoc);
+		}.bind(this));
+		
+		// handle mouse click
+		window.addEventListener('mousedown', function(e){
+			xMouse = e.clientX - xCanvas;
+			yMouse = e.clientY - yCanvas;
+			// handle click here
+			mouseDownLoc = new vec2(xMouse, yMouse);
+			mouseDownLoc = camera.screen_to_world_coords(mouseDownLoc);
+		}.bind(this));
+		
+		// handle mouse release
+		window.addEventListener('mouseup', function(e){
+			xMouse = e.clientX - xCanvas;
+			yMouse = e.clientY - yCanvas;
+			// handle click here
+			mouseLoc.x = xMouse;
+			mouseLoc.y = yMouse;
+			mouseLoc = camera.screen_to_world_coords(mouseLoc);
+			mouseDownLoc = undefined;
+		}.bind(this));
+		
+		// handle touch start
+		window.addEventListener('touchstart', function(e){
+			e.preventDefault();	// don't pan/zoom screen
+			let xMouse = e.touches[0].clientX - xCanvas;
+			let yMouse = e.touches[0].clientY - yCanvas;
+			// handle touchStart here
+			mouseLoc.x = xMouse;
+			mouseLoc.y = yMouse;
+			mouseLoc = camera.screen_to_world_coords(mouseLoc);
+			mouseDownLoc = new vec2(xMouse, yMouse);
+			mouseDownLoc = camera.screen_to_world_coords(mouseDownLoc);
+		}.bind(this), {passive: false});
+		
+		// handle touch move
+		window.addEventListener('touchmove', function(e){
+			e.preventDefault();	// don't pan/zoom screen
+			let xMouse = e.touches[0].clientX - xCanvas;
+			let yMouse = e.touches[0].clientY - yCanvas;
+			// handle touchMove here
+			mouseLoc.x = xMouse;
+			mouseLoc.y = yMouse;
+			mouseLoc = camera.screen_to_world_coords(mouseLoc);
+		}.bind(this), {passive: false});
+		
+		// handle touch end
+		window.addEventListener('touchend', function(e){
+			e.preventDefault();	// don't pan/zoom screen
+			
+			// handle touchEnd here
+			mouseDownLoc = undefined;
+		}.bind(this), {passive: false});
+		
+		// recalculate origin when zooming/scrolling
+		window.addEventListener('scroll', function(e){
+			calculate_canvas_corner();
+		}.bind(this));
+		window.addEventListener('zoom', function(e){
+			calculate_canvas_corner();
+		}.bind(this));
+		
+		const PAN_SPEED = 31.9;
+		window.addEventListener('keydown', function(e){
+			if (e.key == 'p')
+			{
+				gamePaused = !gamePaused;
+				mustImmediatePause = false;
+				console.log('game pause toggle; paused? ', gamePaused ? 'yes' : 'no');
+			}
+			else if(e.key == 'o')
+			{
+				debugFlailPaused = !debugFlailPaused;
+				console.log('debug flail pause toggle; paused? ', debugFlailPaused ? 'yes' : 'no');
+			}
+			else if(e.key == '.')
+			{
+				// advance 1 frame, then pause
+				dstCameraRect = {x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT};
+				gamePaused = false;
+				mustImmediatePause = true;
+				console.log('advance 1 frame');
+			}
+			else if(e.key == '8')
+			{
+				camera.zoom_in(mouseLoc);
+			}
+			else if(e.key == '9')
+			{
+				camera.zoom_out(mouseLoc);
+			}
+			else if(e.key == '0')
+			{
+				camera.reset_camera();
+			}
+			else if(e.key == 'w')
+			{
+				camera.pan(new vec2(0, -PAN_SPEED));
+			}
+			else if(e.key == 's')
+			{
+				camera.pan(new vec2(0, +PAN_SPEED));
+			}
+			else if(e.key == 'a')
+			{
+				camera.pan(new vec2(-PAN_SPEED, 0));
+			}
+			else if(e.key == 'd')
+			{
+				camera.pan(new vec2(+PAN_SPEED, 0));
+			}
+			else if(e.key == 'e')
+			{
+				console.log(`world coords: (${mouseLoc.x}, ${mouseLoc.y})`);
+			}
+		}.bind(this));
+
+		// load resources
+		// load grass blade
+		const MIN_OMEGA = 0.02;
+		const MAX_OMEGA = 0.05;
+		const MIN_BLADE_LEN = 18;
+		const MAX_BLADE_LEN = 38;
+		const MIN_AMPLITUDE = Math.PI/14;
+		const MAX_AMPLITUDE = Math.PI/10;
+		const MIN_EQUILIB_THETA = Math.PI*4/3;
+		const MAX_EQUILIB_THETA = Math.PI*5/3;
+		const NUM_GRASS_CLUMPS = 200;
+		const MIN_NUM_BLADES_PER_CLUMP = 3;
+		const MAX_NUM_BLADES_PER_CLUMP = 3;
+		const MAX_CLUMP_DIST_OFFSET = 14.56;
+		for(let i = 0; i < NUM_GRASS_CLUMPS; ++i)
+		{
+			let numBlades = Math.floor(lerp(MIN_NUM_BLADES_PER_CLUMP, MAX_NUM_BLADES_PER_CLUMP+1, Math.random()));
+			let clumpRootPos = new vec2( lerp(0, CANVAS_WIDTH, Math.random()), lerp(0, CANVAS_HEIGHT, Math.random()) );
+			for(let j = 0; j < numBlades; ++j)
+			{
+				let omega = lerp(MIN_OMEGA, MAX_OMEGA, Math.random());
+				let bladeRootPos = clumpRootPos.add(new vec2(MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1), MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1)));	// grass blades nearby but not bullseye-ing clump's root
+				let bladeLen = lerp(MIN_BLADE_LEN, MAX_BLADE_LEN, Math.random());
+				let theta0 = Math.random()*2*Math.PI;
+				let amplitude = lerp(MIN_AMPLITUDE, MAX_AMPLITUDE, Math.random());
+				let equilibTheta = lerp(MIN_EQUILIB_THETA, MAX_EQUILIB_THETA, Math.random());
+				let color = `hsl(${lerp(88, 132, Math.random())}, 100%, ${rnd_btwn(20, 35)}%, 100%)`;
+				let grassBlade = new GrassBlade(bladeRootPos, bladeLen, theta0, omega, amplitude, equilibTheta, color);
+				particleEngine.add_particle(grassBlade);
+			}
+		}
+	},
+	
+	update: function(){
+		if (!gamePaused)
+		{
+			if (mustImmediatePause)
+			{
+				gamePaused = true;
+			}
+			
+			// create random crab enemy
+			const NUM_FRAMES_PER_ENEMY_CRAB_SPAWN = 70;
+			if (frame % NUM_FRAMES_PER_ENEMY_CRAB_SPAWN == 0)
+			{
+				const MIN_ENEMY_SPEED = 0.8;
+				const MAX_ENEMY_SPEED = 1.75;
+				const MIN_ENEMY_RADIUS = 25.5;
+				const MAX_ENEMY_RADIUS = 35.5;
+				const MIN_ENEMY_Y = 130;
+				const MAX_ENEMY_Y = 230;
+				const MAX_TARGET_OFFSET = 25;
+				let radius = Math.random()*(MAX_ENEMY_RADIUS-MIN_ENEMY_RADIUS)+MIN_ENEMY_RADIUS;
+				let x = Math.random() < 0.5 ? -radius+1 : CANVAS_WIDTH+radius-1;	// barely onscreen to avoid being deleted immediately
+				let y = rnd_btwn(MIN_ENEMY_Y, MAX_ENEMY_Y);
+				let pos = new vec2(x, y);
+				let targetPos = new vec2(CANNON_X + MAX_TARGET_OFFSET*(Math.random()*2-1), CANNON_Y + MAX_TARGET_OFFSET*(Math.random()*2-1));
+				let speed = (MAX_ENEMY_SPEED - MIN_ENEMY_SPEED)*Math.random() + MIN_ENEMY_SPEED;
+				let vel = targetPos.subtract(pos).normalize().mult(speed);
+				let enemyCrab = new EnemyCrab(pos, vel, radius);
+				particleEngine.add_particle(enemyCrab);
+			}
+			
+			// create frog enemy
+			const NUM_FRAMES_PER_ENEMY_FROG_SPAWN = 60;
+			if (frame % NUM_FRAMES_PER_ENEMY_FROG_SPAWN == 0)
+			{
+				const MIN_ENEMY_RADIUS = 15.5;
+				const MAX_ENEMY_RADIUS = 55.5;
+				let radius = rnd_btwn(MIN_ENEMY_RADIUS, MAX_ENEMY_RADIUS);
+				const MIN_ENEMY_Y = 130;
+				const MAX_ENEMY_Y = 230;
+				let x = Math.random()*CANVAS_WIDTH;
+				let y = -radius+1;	// barely onscreen to avoid being deleted immediately
+				const MAX_TARGET_OFFSET = 25;
+				let targetPos = new vec2(CANNON_X + MAX_TARGET_OFFSET*(Math.random()*2-1), CANNON_Y + MAX_TARGET_OFFSET*(Math.random()*2-1));
+				let pos = new vec2(x, y);
+				let jumpDisplacement = targetPos.subtract(pos).mult(0.23);
+				let initialJumpDelayFrames = Math.floor(Math.random()*NUM_FRAMES_PER_ENEMY_FROG_SPAWN);
+				let enemyFrog = new EnemyFrog(pos, jumpDisplacement, radius, initialJumpDelayFrames);
+				particleEngine.add_particle(enemyFrog);
+			}
+			
+			particleEngine.update();
+			
+			// advance cannon recoil timer
+			const CANNON_RECOIL_RECOVER_RATE = 0.93;
+			cannonBarrelRecoilPos *= CANNON_RECOIL_RECOVER_RATE;	// exponentially decaying back to normal
+			
+			--cannonReloadFramesRemaining;
+			if (cannonReloadFramesRemaining <= 0)
+			{
+				const CANNON_INITIAL_RELOAD_FRAMES = 21;
+				const CANNON_INITIAL_RECOIL_POS = 38;
+				if (mouseDownLoc)
+				{
+					// fire again
+					cannonBarrelRecoilPos = CANNON_INITIAL_RECOIL_POS;
+					cannonReloadFramesRemaining = mouseDownLoc ? CANNON_INITIAL_RELOAD_FRAMES : 0;
+					
+					const BULLET_SPEED = 3.7;
+					const BULLET_RADIUS = 13.0;
+					let direc = new vec2(mouseLoc.x - CANNON_X, mouseLoc.y - CANNON_Y);
+					direc = vec2.is_same_loc(direc, new vec2(0, 0)) ? new vec2(0, -1) : direc;	// handle zero direction
+					direc = direc.normalize();
+					let bulletTheta = Math.atan2(direc.y, direc.x);
+					let direc3 = new vec2(1, 0).rotate(bulletTheta);
+					/* triple cannon shot
+					const BULLET_SPLIT_THETA = 0.12;
+					let direc1 = new vec2(1, 0).rotate(bulletTheta-BULLET_SPLIT_THETA);
+					let direc2 = new vec2(1, 0).rotate(bulletTheta+BULLET_SPLIT_THETA);
+					let bullet1 = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc1.mult(CANNON_BASE_RADIUS)), direc1.mult(BULLET_SPEED), BULLET_RADIUS);
+					let bullet2 = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc2.mult(CANNON_BASE_RADIUS)), direc2.mult(BULLET_SPEED), BULLET_RADIUS);
+					particleEngine.add_particle(bullet1);
+					particleEngine.add_particle(bullet2);
+					*/
+					let bullet3 = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc3.mult(CANNON_BASE_RADIUS)), direc3.mult(BULLET_SPEED), BULLET_RADIUS);
+					particleEngine.add_particle(bullet3);
+					play_sound_from_file(spitSoundPath);
+				}
+			}
+			
+			// check for collisions btwn bullets and enemies
+			let bullets = particleEngine.particles.filter(p => p instanceof Bullet);
+			let enemies = particleEngine.particles.filter(p => p instanceof Enemy);
+			for(let b = 0 ; b < bullets.length; ++b)
+			{
+				for(let e = 0; e < enemies.length; ++e)
+				{
+					let b1 = bullets[b];
+					let e1 = enemies[e];
+					
+					if (are_circles_colliding(b1.pos, e1.pos, b1.vel, e1.vel, b1.radius, e1.radius))
+					{
+						b1.isActive = false;
+						e1.isActive = false;
+						
+						particleEngine.create_star_explosion(e1.pos);
+						play_sound_from_file(thudSoundPath);
+						
+						// create smoke at bullet
+						const NUM_SMOKE_PUFFS = 4;
+						const MAX_SMOKE_PUFF_SPEED = 0.15;
+						const MIN_SMOKE_PUFF_RADIUS = 6;
+						const MAX_SMOKE_PUFF_RADIUS = 15;
+						const MAX_SMOKE_PUFF_OFFSET = 5;
+						const MIN_LIFETIME = 20;
+						const MAX_LIFETIME = 30;
+						for(let i = 0; i < NUM_SMOKE_PUFFS; ++i)
+						{
+							let dx = MAX_SMOKE_PUFF_OFFSET*(Math.random()*2 - 1);
+							let dy = MAX_SMOKE_PUFF_OFFSET*(Math.random()*2 - 1);
+							let vx = MAX_SMOKE_PUFF_SPEED*(Math.random()*2 - 1);
+							let vy = MAX_SMOKE_PUFF_SPEED*(Math.random()*2 - 1);
+							let smokePuffRadius = rnd_btwn(MIN_SMOKE_PUFF_RADIUS, MAX_SMOKE_PUFF_RADIUS);
+							let rgbColorStr = `#${Math.floor(rnd_btwn(99, 241)).toString(16).padStart(2, '0').repeat(3)}`;
+							let lifeTime = rnd_btwn(MIN_LIFETIME, MAX_LIFETIME);
+							let pos = get_circle_collision_loc(b1.pos, e1.pos, b1.radius, e1.radius).add(new vec2(dx, dy));
+							let smokePuff = new SmokePuff(pos, new vec2(vx, vy), smokePuffRadius, rgbColorStr, lifeTime);
+							particleEngine.add_particle(smokePuff);
+						}
+						
+						bullets = bullets.slice(0, b).concat(bullets.slice(b+1));
+						enemies = enemies.slice(0, e).concat(enemies.slice(e+1));
+						break;	// skip to next bullet
+					}
+				}
+			}
+			
+			// check for collision between enemy and cannon
+			for(let e = 0; e < enemies.length; ++e)
+			{
+				let e1 = enemies[e];
+				if (are_circles_colliding(new vec2(CANNON_X, CANNON_Y), e1.pos, new vec2(0, 0), e1.vel, CANNON_BASE_RADIUS, e1.radius))
+				{
+					if (frame >= lastCannonHurtFrame + CANNON_HURT_DURATION)
+					{
+						// enemy has hurt cannon. Begin cannon flashing and camera shake
+						lastCannonHurtFrame = frame;
+						const CANNON_HURT_SHAKE_DURATION = 10;
+						const CANNON_HURT_SHAKE_AMPLITUDE = 5;
+						const CANNON_HURT_NUM_FRAMES_PER_JOLT = 2;
+						camera.start_shake(CANNON_HURT_SHAKE_DURATION, CANNON_HURT_SHAKE_AMPLITUDE, CANNON_HURT_NUM_FRAMES_PER_JOLT);
+						play_sound_from_file(snareSoundPath);
+					}
+					
+					// destroy enemy
+					particleEngine.create_star_explosion(e1.pos);
+					e1.isActive = false;
+					enemies = enemies.slice(0, e).concat(enemies.slice(e+1));
+					play_sound_from_file(thudSoundPath);
+				}
+			}
+			
+			// camera zoom/pan decay
+			camera.update();
+			
+			++frame;
+		}
+		
+		if (!debugFlailPaused)
+		{
+			++debugFrame;
+		}
+		
+		// fps
+		let currTime = new Date().getTime();
+		if (frame % NUM_FRAMES_PER_FPS_UPDATE == 0)
+		{
+			document.getElementById("fpsDisplay").innerText = 'FPS: '.concat((1000/(currTime-prevFrameTime)).toFixed(1));
+		}
+		prevFrameTime = currTime;
+	},
+
+	render: function(){
+		// clear screen
+		ctx.setTransform(1, 0, 0, 1, 0, 0);	// load identity matrix
+		ctx.fillStyle = "#404010FF";
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		
+		// set camera transform
+		camera.set_transform_matrix();
+		
+		// render particles
+		particleEngine.render();
+		
+		// render cursor crosshair
+		const CURSOR_RADIUS = 5;
+		const CURSOR_COLOR = '#FFFF00FF';
+		mouseLoc.render_ring(CURSOR_COLOR, CURSOR_RADIUS);
+		new LineSeg(new vec2(mouseLoc.x, mouseLoc.y-2*CURSOR_RADIUS),
+					new vec2(mouseLoc.x, mouseLoc.y+2*CURSOR_RADIUS)).render(CURSOR_COLOR);
+		new LineSeg(new vec2(mouseLoc.x-2*CURSOR_RADIUS, mouseLoc.y),
+					new vec2(mouseLoc.x+2*CURSOR_RADIUS, mouseLoc.y)).render(CURSOR_COLOR);
+		new LineSeg(new vec2(CANNON_X, CANNON_Y), mouseLoc).render(CURSOR_COLOR);
+		
+		// render cannon base, flashing red if recently hurt
+		const CANNON_BASE_COLOR = '#808090';
+		const CANNON_RING_COLOR = '#223322';
+		const CANNON_BASE_HURT_COLOR = '#B08090';
+		const CANNON_RING_HURT_COLOR = '#623322';
+		let isCannonRed = frame < lastCannonHurtFrame + CANNON_HURT_DURATION ? (frame % CANNON_FLASH_PERIOD < CANNON_FLASH_PERIOD/2) : false;
+		let cannonBaseColor = isCannonRed ? CANNON_BASE_HURT_COLOR : CANNON_BASE_COLOR;
+		let cannonRingColor = isCannonRed ? CANNON_RING_HURT_COLOR : CANNON_RING_COLOR;
+		new vec2(CANNON_X, CANNON_Y).render_solid(cannonBaseColor, CANNON_BASE_RADIUS);
+		new vec2(CANNON_X, CANNON_Y).render_ring (cannonRingColor, CANNON_BASE_RADIUS);
+		
+		// render cannon barrel
+		ctx.fillStyle = cannonBaseColor;
+		ctx.strokeStyle = cannonRingColor;
+		ctx.beginPath();
+		const BARREL_FRONT_DIAMETER = 15;
+		const BARREL_REAR_DIAMETER = 20;
+		const BARREL_NOZZLE_LENGTH = 40;
+		const BARREL_RADIAL_OFFSET = 30;
+		cannonTheta = Math.atan2(CANNON_X - mouseLoc.x, -(CANNON_Y - mouseLoc.y));	// angle in radians clockwise from positive y-axis
+		let COS = Math.cos(cannonTheta);
+		let SIN = Math.sin(cannonTheta);
+		[new vec2( BARREL_FRONT_DIAMETER/2,  BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+		 new vec2( BARREL_REAR_DIAMETER /2, -BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+		 new vec2(-BARREL_REAR_DIAMETER /2, -BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+		 new vec2(-BARREL_FRONT_DIAMETER/2,  BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+		 undefined].forEach((v, i, arr) => {
+			v = arr[i%4];	// wrap 4th to first vertex
+			let x = v.x*COS - v.y*SIN;	// rotate cannon barrel to face cursor
+			let y = v.x*SIN + v.y*COS;
+			if (i == 0)
+			{
+				ctx.moveTo(x + CANNON_X, y + CANNON_Y);
+			}
+			else
+			{
+				ctx.lineTo(x + CANNON_X, y + CANNON_Y);
+			}
+		});
+		ctx.stroke();
+		ctx.fill();
+		
+		// render other things
+	},
+	
+	gameLoop: function(){
+		this.update();
+		this.render();
+	},
+		
+	run: function(){
+		// execute frame logic and render at a rate of 60 FPS
+		window.setInterval(this.gameLoop.bind(this), 1000/FPS);
+	},
+};
+
+function startGame(){
+	console.log("game started");
+	game.setup();
+	game.run();
+}
+
+</script>
+</body>
+</html>
