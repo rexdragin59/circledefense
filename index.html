@@ -3,11 +3,12 @@
 <head>
 	<title>Javascript game</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel = "icon" href = "data:image/png;base64,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" type = "image/x-icon">
+	<link rel = "icon" href = "minimalLogo.png" type = "image/x-icon">
 </head>
 <body onload = "startGame()">
 <div>
-	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
+	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies, (f) to start playing</p>
+	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon</p>
 	<div id="fpsDisplay" style="user-select: none">FPS:</div>
 	<p>
 		<canvas id="myCanvas" width="600" height="480" style="border:2 px solid black;"></canvas>
@@ -320,6 +321,26 @@ function Rect(x, y, w, h)
 	this.y = y;
 	this.w = w;
 	this.h = h;
+}
+
+Rect.prototype.contains_xy = function(x, y, isBorderIncluded = true)
+{
+	if (isBorderIncluded)
+	{
+		return x >= this.x &&
+			   x <= this.x + this.w &&
+			   y >= this.y &&
+			   y <= this.y + this.h;
+	}
+	return x > this.x &&
+		   x < this.x + this.w &&
+		   y > this.y &&
+		   y < this.y + this.h;
+}
+
+Rect.prototype.contains_vec2 = function(v, isBorderIncluded = true)
+{
+	return this.contains_xy(v.x, v.y, isBorderIncluded);
 }
 
 
@@ -1002,6 +1023,7 @@ EnemyFrog.prototype.render = function()
 	}
 }
 
+// constructor
 function Bullet(pos, vel, radius)
 {
 	MovingParticle.call(this, pos, vel, radius);
@@ -1259,6 +1281,173 @@ load_sound_from_file(snareSoundPath);
 let spitSoundPath = 'spit.wav';
 load_sound_from_file(spitSoundPath);
 
+const GAME_STATE_PLAY_BUTTON = 'GAME_STATE_PLAY_BUTTON';
+const GAME_STATE_PLAYING = 'GAME_STATE_PLAYING';
+let gameState = GAME_STATE_PLAYING;
+
+
+const BUTTON_STATE_OFF = 'BUTTON_STATE_OFF';	// mouse not over
+const BUTTON_STATE_OVER = 'BUTTON_STATE_OVER';
+const BUTTON_STATE_DOWN = 'BUTTON_STATE_DOWN';
+
+// returns boolean whether circle with center (vec2) and radius contains point (vec2)
+function does_circle_contain_point(center, radius, point, isBorderIncluded = true)
+{
+	if (isBorderIncluded)
+	{
+		return center.subtract(point).len_sq() <= radius*radius;
+	}
+	return center.subtract(point).len_sq() < radius*radius;
+}
+
+// constructor
+// rect (x, y, w, h) can be in world or screen (or any other system of) coords, so long as args passed to handle_mouse_* are also in same coords sys
+function Button(x, y, w, h, roundCornerRadius, offColor, overColor, downColor, strokeColor)
+{
+	Rect.call(this, x, y, w, h);
+	if (roundCornerRadius > w/2)
+	{
+		roundCornerRadius = w/2;
+	}
+	
+	if (roundCornerRadius > h/2)
+	{
+		roundCornerRadius = h/2;
+	}
+	this.r = roundCornerRadius;
+	this.state = BUTTON_STATE_OFF;
+	this.offColor = offColor;
+	this.overColor = overColor;
+	this.downColor = downColor;
+	this.strokeColor = strokeColor;
+	this.hasClickedDown = false;	// Boolean whether mouse has clicked down on this buttono
+}
+Button.prototype = Object.create(Rect.prototype);
+
+// returns boolean whether arg point is within button's clickable region
+Button.prototype.contains_vec2 = function(point)
+{
+	if (!Rect.prototype.contains_vec2.call(this, point))
+	{
+		return false;
+	}
+	
+	// check to see if clicked inside rounded corners
+	let corners = [{rect: new Rect(this.x,               this.y,               this.r, this.r), c: new vec2(this.x+this.r,        this.y+this.r)},
+				   {rect: new Rect(this.x+this.w-this.r, this.y,               this.r, this.r), c: new vec2(this.x+this.w-this.r, this.y+this.r)},
+				   {rect: new Rect(this.x+this.w-this.r, this.y+this.h-this.r, this.r, this.r), c: new vec2(this.x+this.w-this.r, this.y+this.h-this.r)},
+				   {rect: new Rect(this.x,               this.y+this.h-this.r, this.r, this.r), c: new vec2(this.x+this.r,        this.y+this.h-this.r)}];
+	return !corners.some(corner => corner.rect.contains_vec2(point) && !does_circle_contain_point(corner.c, this.r, point) );
+}
+
+Button.prototype.onclick = function()
+{
+	throw new Error('must override pure virtual method Button.onclick()');
+}
+
+Button.prototype.handle_mouse_down = function(mouseLoc)
+{
+	if (this.contains_vec2(mouseLoc))
+	{
+		this.state = BUTTON_STATE_DOWN;
+		this.hasClickedDown = true;
+	}
+}
+
+Button.prototype.handle_mouse_motion = function(mouseLoc, isMouseDown)
+{
+	if (this.contains_vec2(mouseLoc))
+	{
+		if (this.hasClickedDown)
+		{
+			this.state = BUTTON_STATE_DOWN; // need only check for button_down and button_over states; all others outcomes of handle_motion are button_off
+		}
+		else if(!isMouseDown)
+		{
+			this.state = BUTTON_STATE_OVER;
+		}
+		else
+		{
+			this.state = BUTTON_STATE_OFF;
+		}
+	}
+	else
+	{
+		this.state = BUTTON_STATE_OFF;
+	}
+}
+
+Button.prototype.handle_mouse_up = function(mouseLoc)
+{
+	if (this.hasClickedDown && this.contains_vec2(mouseLoc))
+	{
+		this.onclick();
+		this.state = BUTTON_STATE_OVER;
+	}
+	else
+	{
+		this.state = BUTTON_STATE_OFF;
+	}
+	this.hasClickedDown = false;
+}
+
+Button.prototype.render = function()
+{
+	if (this.state == BUTTON_STATE_OFF)
+	{
+		ctx.fillStyle = this.offColor;
+	}
+	else if(this.state == BUTTON_STATE_OVER)
+	{
+		ctx.fillStyle = this.overColor;
+	}
+	else if(this.state == BUTTON_STATE_DOWN)
+	{
+		ctx.fillStyle = this.downColor;
+	}
+	else
+	{
+		throw new Error(`invalid button state: ${this.state}`);
+	}
+	ctx.strokeStyle = this.strokeColor;	
+	
+	// render rounded rectangle
+	ctx.beginPath();
+	ctx.moveTo(this.x + this.r, this.y);
+	ctx.lineTo(this.x + this.w - this.r, this.y);
+	ctx.arcTo(this.x + this.w, this.y, this.x + this.w, this.y + this.r, this.r); // (xControl, yControl, xDst, yDst, radius)
+	ctx.lineTo(this.x + this.w, this.y + this.h - this.r);
+	ctx.arcTo(this.x + this.w, this.y + this.h, this.x + this.w - this.r, this.y + this.h, this.r);
+	ctx.lineTo(this.x + this.r, this.y + this.h);
+	ctx.arcTo(this.x, this.y + this.h, this.x, this.y - this.r, this.r);
+	ctx.lineTo(this.x, this.y + this.r);
+	ctx.arcTo(this.x, this.y, this.x + this.r, this.y, this.r);
+	ctx.stroke();
+	ctx.fill();
+}
+
+// constructor
+function UpgradeButton(x, y, w, h, roundCornerRadius, offColor, overColor, downColor, strokeColor)
+{
+	Button.call(this, x, y, w, h, roundCornerRadius, offColor, overColor, downColor, strokeColor);
+}
+UpgradeButton.prototype = Object.create(Button.prototype);
+
+let nCannonBulletForks = 1;
+UpgradeButton.prototype.onclick = function()
+{
+	++nCannonBulletForks;
+}
+
+let buttonRoundCornerRadius = 18.5;
+let buttonOffColor = '#FF000080';
+let buttonOverColor = '#0000FF80';
+let buttonDownColor = '#00FF0080';
+let buttonStrokeColor = 'black';
+let button1 = new UpgradeButton(50.1, 300, 60, 60, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
+let activeButtons = [];	// Array of (subclasses of) Button
+activeButtons.push(button1);
+
 var game = {
 	// set canvas and create Context
 	
@@ -1271,6 +1460,16 @@ var game = {
 		canvas.style.height = CANVAS_HEIGHT.toString() + "px";
 		calculate_canvas_corner();
 		
+		// handle mouse down
+		window.addEventListener('mousedown', function(e){
+			xMouse = e.clientX - xCanvas;
+			yMouse = e.clientY - yCanvas;
+			// handle mouse down here
+			mouseDownLoc = new vec2(xMouse, yMouse);
+			mouseDownLoc = camera.screen_to_world_coords(mouseDownLoc);
+			activeButtons.forEach(bt => bt.handle_mouse_down(mouseLoc));
+		}.bind(this));
+		
 		// handle mouse motion
 		window.addEventListener('mousemove', function(e){
 			xMouse = e.clientX - xCanvas;	// no need to add/subtract window.pageXOffset, because xCanvas already accounts for page offset
@@ -1280,26 +1479,19 @@ var game = {
 			mouseLoc.x = xMouse;
 			mouseLoc.y = yMouse;
 			mouseLoc = camera.screen_to_world_coords(mouseLoc);
-		}.bind(this));
-		
-		// handle mouse click
-		window.addEventListener('mousedown', function(e){
-			xMouse = e.clientX - xCanvas;
-			yMouse = e.clientY - yCanvas;
-			// handle click here
-			mouseDownLoc = new vec2(xMouse, yMouse);
-			mouseDownLoc = camera.screen_to_world_coords(mouseDownLoc);
+			activeButtons.forEach(bt => bt.handle_mouse_motion(mouseLoc, Boolean(mouseDownLoc)));
 		}.bind(this));
 		
 		// handle mouse release
 		window.addEventListener('mouseup', function(e){
 			xMouse = e.clientX - xCanvas;
 			yMouse = e.clientY - yCanvas;
-			// handle click here
+			// handle mouse up here
 			mouseLoc.x = xMouse;
 			mouseLoc.y = yMouse;
 			mouseLoc = camera.screen_to_world_coords(mouseLoc);
 			mouseDownLoc = undefined;
+			activeButtons.forEach(bt => bt.handle_mouse_up(mouseLoc));
 		}.bind(this));
 		
 		// handle touch start
@@ -1313,6 +1505,7 @@ var game = {
 			mouseLoc = camera.screen_to_world_coords(mouseLoc);
 			mouseDownLoc = new vec2(xMouse, yMouse);
 			mouseDownLoc = camera.screen_to_world_coords(mouseDownLoc);
+			activeButtons.forEach(bt => bt.handle_mouse_down(mouseLoc));
 		}.bind(this), {passive: false});
 		
 		// handle touch move
@@ -1324,6 +1517,7 @@ var game = {
 			mouseLoc.x = xMouse;
 			mouseLoc.y = yMouse;
 			mouseLoc = camera.screen_to_world_coords(mouseLoc);
+			activeButtons.forEach(bt => bt.handle_mouse_motion(mouseLoc, true));
 		}.bind(this), {passive: false});
 		
 		// handle touch end
@@ -1332,6 +1526,7 @@ var game = {
 			
 			// handle touchEnd here
 			mouseDownLoc = undefined;
+			activeButtons.forEach(bt => bt.handle_mouse_up(mouseLoc));
 		}.bind(this), {passive: false});
 		
 		// recalculate origin when zooming/scrolling
@@ -1395,6 +1590,10 @@ var game = {
 			{
 				console.log(`world coords: (${mouseLoc.x}, ${mouseLoc.y})`);
 			}
+			else if(e.key == 'f')
+			{
+				gameState = GAME_STATE_PLAYING;
+			}
 		}.bind(this));
 
 		// load resources
@@ -1431,7 +1630,7 @@ var game = {
 	},
 	
 	update: function(){
-		if (!gamePaused)
+		if (gameState == GAME_STATE_PLAYING && !gamePaused)
 		{
 			if (mustImmediatePause)
 			{
@@ -1499,22 +1698,17 @@ var game = {
 					
 					const BULLET_SPEED = 3.7;
 					const BULLET_RADIUS = 13.0;
-					let direc = new vec2(mouseLoc.x - CANNON_X, mouseLoc.y - CANNON_Y);
-					direc = vec2.is_same_loc(direc, new vec2(0, 0)) ? new vec2(0, -1) : direc;	// handle zero direction
-					direc = direc.normalize();
-					let bulletTheta = Math.atan2(direc.y, direc.x);
-					let direc3 = new vec2(1, 0).rotate(bulletTheta);
-					/* triple cannon shot
-					const BULLET_SPLIT_THETA = 0.12;
-					let direc1 = new vec2(1, 0).rotate(bulletTheta-BULLET_SPLIT_THETA);
-					let direc2 = new vec2(1, 0).rotate(bulletTheta+BULLET_SPLIT_THETA);
-					let bullet1 = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc1.mult(CANNON_BASE_RADIUS)), direc1.mult(BULLET_SPEED), BULLET_RADIUS);
-					let bullet2 = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc2.mult(CANNON_BASE_RADIUS)), direc2.mult(BULLET_SPEED), BULLET_RADIUS);
-					particleEngine.add_particle(bullet1);
-					particleEngine.add_particle(bullet2);
-					*/
-					let bullet3 = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc3.mult(CANNON_BASE_RADIUS)), direc3.mult(BULLET_SPEED), BULLET_RADIUS);
-					particleEngine.add_particle(bullet3);
+					const BULLET_FORK_ARC = Math.PI/8.23;	// angle of arc of a single fork in adjacent bullets
+					let direc0 = new vec2(mouseLoc.x - CANNON_X, mouseLoc.y - CANNON_Y);
+					direc0 = vec2.is_same_loc(direc0, new vec2(0, 0)) ? new vec2(0, -1) : direc0;	// handle zero direction
+					let bulletTheta0 = Math.atan2(direc0.y, direc0.x) - BULLET_FORK_ARC*(nCannonBulletForks-1)/2;
+					for(let i = 0; i < nCannonBulletForks; ++i)
+					{
+						let direc = new vec2(1, 0).rotate(bulletTheta0 + BULLET_FORK_ARC*i);
+						let bullet = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc.mult(CANNON_BASE_RADIUS)),	// bullet materializes some dist away from cannon base, not directly atop cannon base's center
+												direc.mult(BULLET_SPEED), BULLET_RADIUS);
+						particleEngine.add_particle(bullet);
+					}
 					play_sound_from_file(spitSoundPath);
 				}
 			}
@@ -1675,7 +1869,18 @@ var game = {
 		ctx.stroke();
 		ctx.fill();
 		
-		// render other things
+		// render game level text
+		if (gameState == GAME_STATE_PLAY_BUTTON)
+		{
+			ctx.font = "31px Arial";
+			ctx.fillStyle = '#FFFFFFFF';
+			ctx.strokeStyle = '#FFFF00FF';
+			ctx.fillText('READY TO PLAY, press f to begin', 100, 300);
+			ctx.strokeText('READY TO PLAY, press f to begin', 100, 300);
+		}
+		
+		// render test button
+		button1.render();
 	},
 	
 	gameLoop: function(){
