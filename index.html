@@ -7,7 +7,7 @@
 </head>
 <body onload = "startGame()">
 <div>
-	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies, (f) to start playing</p>
+	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
 	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon</p>
 	<div id="fpsDisplay" style="user-select: none">FPS:</div>
 	<p>
@@ -348,16 +348,6 @@ Rect.prototype.contains_vec2 = function(v, isBorderIncluded = true)
 function load_image(filepath){
 	var img = document.createElement("img");
 	img.src = filepath;
-	img.onload = function(){
-		img.isLoaded = true;
-	};
-	img.isLoaded = false;	// custom member
-	return img;
-}
-
-function load_image_from_svg_string(src){
-	var img = document.createElement("img");
-	img.src = `data:image/svg+xml;base64,${btoa(src)}`;
 	img.onload = function(){
 		img.isLoaded = true;
 	};
@@ -993,6 +983,8 @@ EnemyFrog.prototype.render = function()
 	let shadowDst0 = shadowNorm0.mult(this.radius).add(this.groundPos);
 	let standShadowNorm1 = new vec2((428.5-260.9)/282, (307.7-260.9)/282);	// rightmost point of shadow
 	const CAMERA_VIEW_FACTOR = Math.SQRT1_2;	// if camera looks down with declination angle theta, then a vertical height h is projected onto one [diagonal pixel orthogonal to camera's line of sight] of length h*sin(theta)
+	
+	// render hitbox
 	if (this.isJumping)
 	{
 		// render jumping frog's shadow
@@ -1117,6 +1109,105 @@ SmokePuff.prototype.render = function()
 }
 
 // constructor
+// coin dropped by killed enemies
+const COIN_STATE_COLLECTIBLE = 'COIN_STATE_COLLECTIBLE';
+const COIN_STATE_EVAPORATING = 'COIN_STATE_EVAPORATING';
+const COIN_LIFETIME_FRAMES = 300;
+const COIN_EVAPORATE_DURATION_FRAMES = 30;
+function Coin(pos, radius)
+{
+	MovingParticle.call(this, pos, new vec2(0, 0), radius);
+	// this.radius == render radius
+	this.animFrame = 0;	// integer in range [0, 6)
+	this.creationFrame = frame;	// frame this Coin was created
+	this.startPosY = pos.y;
+	this.state = COIN_STATE_COLLECTIBLE;
+	
+	this.startEvaporateFrame;
+	this.startEvaporateY;
+}
+Coin.prototype = Object.create(MovingParticle.prototype);
+
+Coin.prototype.is_dead = function()
+{
+	if (this.state == COIN_STATE_COLLECTIBLE)
+	{
+		return frame >= this.creationFrame + COIN_LIFETIME_FRAMES || !this.isActive;	
+	}
+	else if(this.state == COIN_STATE_EVAPORATING)
+	{
+		return frame >= this.startEvaporateFrame + COIN_EVAPORATE_DURATION_FRAMES || !this.isActive;
+	}
+	throw new Error(`invalid coin state \"${this.state}\"`);
+}
+
+Coin.prototype.get_y_priority = function()
+{
+	return this.startPosY + this.radius;
+}
+
+// begin evaporation; should only be called once per coin
+Coin.prototype.evaporate = function()
+{
+	this.state = COIN_STATE_EVAPORATING;
+	this.startEvaporateY = this.pos.y;
+	this.startEvaporateFrame = frame;
+}
+
+Coin.prototype.update = function()
+{
+	if (this.state == COIN_STATE_COLLECTIBLE)
+	{
+		const COIN_NUM_FRAMES_PER_ANIM_FRAME_HOVERING = 5;
+		this.animFrame = Math.floor((frame - this.creationFrame)/COIN_NUM_FRAMES_PER_ANIM_FRAME_HOVERING) % 6;
+		
+		const COIN_MAX_HOVER_HEIGHT = 8.0;	// world coord units
+		const COIN_HOVER_PERIOD_FRAMES = 99;
+		this.pos.y = this.startPosY - COIN_MAX_HOVER_HEIGHT*0.5*(1 - Math.cos((frame - this.creationFrame)*2*Math.PI/COIN_HOVER_PERIOD_FRAMES) );	// sinusoidal hovering
+	}
+	else if(this.state == COIN_STATE_EVAPORATING)
+	{
+		const COIN_NUM_FRAMES_PER_ANIM_FRAME_EVAPORATING = 1;
+		this.animFrame = Math.floor((frame - this.startEvaporateFrame)/COIN_NUM_FRAMES_PER_ANIM_FRAME_EVAPORATING) % 6;
+		
+		const COIN_MAX_EVAPORATE_HEIGHT = 60;
+		let param = (frame - this.startEvaporateFrame)/COIN_EVAPORATE_DURATION_FRAMES;
+		this.pos.y = this.startEvaporateY - COIN_MAX_EVAPORATE_HEIGHT * param**0.5;
+		
+	}
+	else
+	{
+		throw new Error(`invalid coin state \"${this.state}\"`);
+	}
+}
+
+Coin.prototype.render = function()
+{
+	let alpha = 1.0;
+	if (this.state == COIN_STATE_COLLECTIBLE)
+	{
+		const COIN_FADE_DURATION_FRAMES_HOVERING = 30;	// number of frames within lifetime that alpha fading occurs
+		alpha = 1 - (frame - this.creationFrame - COIN_LIFETIME_FRAMES + COIN_FADE_DURATION_FRAMES_HOVERING)/COIN_FADE_DURATION_FRAMES_HOVERING;
+	}
+	else if(this.state == COIN_STATE_EVAPORATING)
+	{
+		const COIN_FADE_DURATION_FRAMES_EVAPORATING = 30;
+		alpha = 1 - (frame - this.startEvaporateFrame - COIN_EVAPORATE_DURATION_FRAMES + COIN_FADE_DURATION_FRAMES_EVAPORATING)/COIN_FADE_DURATION_FRAMES_EVAPORATING;
+	}
+	else
+	{
+		throw new Error(`invalid coin state \"${this.state}\"`);
+	}
+	
+	let srcRect = new Rect(this.animFrame*79, 0, 79, 79);
+	let dstRect = new Rect(this.pos.x - this.radius, this.pos.y - this.radius, this.radius*2, this.radius*2);
+	apply_image_precise(coinSheet, alpha, srcRect, dstRect);
+}
+
+const CURSOR_COIN_COLLECT_RADIUS = 30;
+let nCoins = 0;
+
+// constructor
 function Camera()
 {
 	this.topLeft = new vec2(0, 0);	// vec2; world coords
@@ -1226,6 +1317,7 @@ let frogStand = load_image('frogStand.png');
 let frogJump = load_image('frogJump.png');
 let frogStandShadow = load_image('frogStandShadow.png');
 let frogJumpShadow = load_image('frogJumpShadow.png');
+let coinSheet = load_image('coinSheet.png');
 
 // draws arg img such that the lineSeg (pic0, pic1) treated as world coords, lines up exactly with [the lineSeg (dst0, dst1) in world coords]
 // reflects images about lineSeg iff boolean arg mustReflect is true
@@ -1280,6 +1372,8 @@ let snareSoundPath = 'snare.wav';
 load_sound_from_file(snareSoundPath);
 let spitSoundPath = 'spit.wav';
 load_sound_from_file(spitSoundPath);
+let coinSoundPath = 'coinClink.wav';
+load_sound_from_file(coinSoundPath);
 
 const GAME_STATE_PLAY_BUTTON = 'GAME_STATE_PLAY_BUTTON';
 const GAME_STATE_PLAYING = 'GAME_STATE_PLAYING';
@@ -1291,13 +1385,13 @@ const BUTTON_STATE_OVER = 'BUTTON_STATE_OVER';
 const BUTTON_STATE_DOWN = 'BUTTON_STATE_DOWN';
 
 // returns boolean whether circle with center (vec2) and radius contains point (vec2)
-function does_circle_contain_point(center, radius, point, isBorderIncluded = true)
+function does_circle_contain_point(circleCenter, circleRadius, point, isBorderIncluded = true)
 {
 	if (isBorderIncluded)
 	{
-		return center.subtract(point).len_sq() <= radius*radius;
+		return circleCenter.subtract(point).len_sq() <= circleRadius*circleRadius;
 	}
-	return center.subtract(point).len_sq() < radius*radius;
+	return circleCenter.subtract(point).len_sq() < circleRadius*circleRadius;
 }
 
 // constructor
@@ -1436,7 +1530,20 @@ UpgradeButton.prototype = Object.create(Button.prototype);
 let nCannonBulletForks = 1;
 UpgradeButton.prototype.onclick = function()
 {
-	++nCannonBulletForks;
+	if (nCoins >= nCannonBulletForks*3)
+	{
+		nCoins -= nCannonBulletForks*3;
+		++nCannonBulletForks;
+	}
+}
+
+UpgradeButton.prototype.render = function()
+{
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Courier New";
+	ctx.fillStyle = '#FFFFFFFF';
+	ctx.fillText(`cost to upgrade: ${nCannonBulletForks*3} coins`, this.x, this.y + this.h + 20);
+	ctx.fillText(`number of forks: ${nCannonBulletForks}`, this.x, this.y + this.h + 60);
 }
 
 let buttonRoundCornerRadius = 18.5;
@@ -1444,9 +1551,9 @@ let buttonOffColor = '#FF000080';
 let buttonOverColor = '#0000FF80';
 let buttonDownColor = '#00FF0080';
 let buttonStrokeColor = 'black';
-let button1 = new UpgradeButton(50.1, 300, 60, 60, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
+let upgradeButton = new UpgradeButton(50.1, 300, 60, 60, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
 let activeButtons = [];	// Array of (subclasses of) Button
-activeButtons.push(button1);
+activeButtons.push(upgradeButton);
 
 var game = {
 	// set canvas and create Context
@@ -1731,6 +1838,9 @@ var game = {
 						particleEngine.create_star_explosion(e1.pos);
 						play_sound_from_file(thudSoundPath);
 						
+						const COIN_RADIUS = 20;
+						particleEngine.add_particle(new Coin(e1.pos, COIN_RADIUS)); // drop coin
+						
 						// create smoke at bullet
 						const NUM_SMOKE_PUFFS = 4;
 						const MAX_SMOKE_PUFF_SPEED = 0.15;
@@ -1785,6 +1895,16 @@ var game = {
 				}
 			}
 			
+			// collect coins close to cursor
+			particleEngine.particles.filter(p => p instanceof Coin && p.state == COIN_STATE_COLLECTIBLE).forEach(coin => {
+				if (does_circle_contain_point(mouseLoc, CURSOR_COIN_COLLECT_RADIUS + coin.radius, coin.pos))
+				{
+					coin.evaporate();
+					play_sound_from_file(coinSoundPath);
+					++nCoins;
+				}
+			});
+			
 			// camera zoom/pan decay
 			camera.update();
 			
@@ -1826,6 +1946,10 @@ var game = {
 		new LineSeg(new vec2(mouseLoc.x-2*CURSOR_RADIUS, mouseLoc.y),
 					new vec2(mouseLoc.x+2*CURSOR_RADIUS, mouseLoc.y)).render(CURSOR_COLOR);
 		new LineSeg(new vec2(CANNON_X, CANNON_Y), mouseLoc).render(CURSOR_COLOR);
+		
+		// render coin collect circle around cursor
+		const COIN_COLLECT_CIRCLE_COLOR = '#A4A4A480';
+		mouseLoc.render_ring(COIN_COLLECT_CIRCLE_COLOR, CURSOR_COIN_COLLECT_RADIUS);
 		
 		// render cannon base, flashing red if recently hurt
 		const CANNON_BASE_COLOR = '#808090';
@@ -1879,8 +2003,15 @@ var game = {
 			ctx.strokeText('READY TO PLAY, press f to begin', 100, 300);
 		}
 		
-		// render test button
-		button1.render();
+		// render number of coins on hand
+		ctx.font = "20px Courier New";
+		ctx.fillStyle = '#FFFFFFFF';
+		ctx.fillText(`coins: ${nCoins}`, 80, 180);
+		
+		// render active buttons
+		activeButtons.forEach(bt => bt.render());
+		
+		// render other things
 	},
 	
 	gameLoop: function(){
