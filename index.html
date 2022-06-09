@@ -8,15 +8,15 @@
 <body onload = "startGame()">
 <div>
 	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
-	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon</p>
+	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins, press (u) to toggle between upgrade and playing gameStates</p>
 	<div id="fpsDisplay" style="user-select: none">FPS:</div>
 	<p>
-		<canvas id="myCanvas" width="600" height="480" style="border:2 px solid black;"></canvas>
+		<canvas id="myCanvas" width="600" height="480" style="border: 2px solid black;"></canvas>
 	</p>
 </div>
 <script>
 
-const CANVAS_WIDTH = 600;
+const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 480;
 let canvas = undefined;
 let ctx = undefined;
@@ -698,6 +698,11 @@ function ParticleEngine()
 	this.particles = [];
 }
 
+ParticleEngine.prototype.reset_engine = function()
+{
+	this.particles.splice(0);
+}
+
 ParticleEngine.prototype.add_particle = function(particle)
 {
 	if (this.particles.length >= MAX_NUM_PARTICLES){
@@ -804,8 +809,8 @@ function get_circle_collision_loc(p1, p2, r1, r2)
 function MovingParticle(pos, vel, radius)
 {
 	Particle.call(this);
-	this.pos = pos;
-	this.vel = vel;
+	this.pos = pos.clone();
+	this.vel = vel.clone();
 	if (radius < 0)
 	{
 		throw new Error("radius cannot be negative");
@@ -862,7 +867,7 @@ EnemyCrab.prototype.is_animating = function()
 EnemyCrab.prototype.update = function()
 {
 	MovingParticle.prototype.update.call(this);
-	const ANIMATE_PROB = 0.015;
+	const ANIMATE_PROB = 0.020;
 	if (!this.is_animating() && Math.random() < ANIMATE_PROB)
 	{
 		this.startAnimFrame = frame;
@@ -1024,10 +1029,13 @@ Bullet.prototype = Object.create(MovingParticle.prototype);
 
 Bullet.prototype.render = function()
 {
-	const BULLET_FILL_COLOR = '#A3A4A560';
-	const BULLET_STROKE_COLOR = 'black';
-	this.pos.render_solid(BULLET_FILL_COLOR, this.radius);
-	this.pos.render_ring(BULLET_STROKE_COLOR, this.radius);
+	let gc = this.pos.add(new vec2(0.5, -0.5).mult(this.radius));	// gradient center
+	let gradient = ctx.createRadialGradient(gc.x, gc.y, 0, gc.x, gc.y, 2*this.radius);
+	gradient.addColorStop(0, '#B2A7A0');
+	gradient.addColorStop(0.15, '#7C7570');
+	gradient.addColorStop(.5, '#4f453f');
+	gradient.addColorStop(1, '#3c3b3b');
+	this.pos.render_solid(gradient, this.radius);
 }
 
 // constructor
@@ -1120,7 +1128,7 @@ function Coin(pos, radius)
 	// this.radius == render radius
 	this.animFrame = 0;	// integer in range [0, 6)
 	this.creationFrame = frame;	// frame this Coin was created
-	this.startPosY = pos.y;
+	this.startPos = pos.clone();
 	this.state = COIN_STATE_COLLECTIBLE;
 	
 	this.startEvaporateFrame;
@@ -1143,7 +1151,7 @@ Coin.prototype.is_dead = function()
 
 Coin.prototype.get_y_priority = function()
 {
-	return this.startPosY + this.radius;
+	return this.startPos.y + this.radius;
 }
 
 // begin evaporation; should only be called once per coin
@@ -1154,8 +1162,31 @@ Coin.prototype.evaporate = function()
 	this.startEvaporateFrame = frame;
 }
 
+const COIN_FRICTION = 0.80;
+const MAX_COIN_SPEED = 2.7;
 Coin.prototype.update = function()
 {
+	// move coin onscreen
+	if (this.startPos.x < 0)
+	{
+		this.vel.x = MAX_COIN_SPEED;
+	}
+	if (this.startPos.x > CANVAS_WIDTH)
+	{
+		this.vel.x = -MAX_COIN_SPEED;
+	}
+	if (this.startPos.y < 0)
+	{
+		this.vel.y = MAX_COIN_SPEED;
+	}
+	if (this.startPos.y > CANVAS_HEIGHT)
+	{
+		this.vel.y = -MAX_COIN_SPEED;
+	}
+	this.startPos = this.startPos.add(this.vel);
+	this.vel = this.vel.mult(COIN_FRICTION);
+	this.pos.x = this.startPos.x;
+	
 	if (this.state == COIN_STATE_COLLECTIBLE)
 	{
 		const COIN_NUM_FRAMES_PER_ANIM_FRAME_HOVERING = 5;
@@ -1163,7 +1194,7 @@ Coin.prototype.update = function()
 		
 		const COIN_MAX_HOVER_HEIGHT = 8.0;	// world coord units
 		const COIN_HOVER_PERIOD_FRAMES = 99;
-		this.pos.y = this.startPosY - COIN_MAX_HOVER_HEIGHT*0.5*(1 - Math.cos((frame - this.creationFrame)*2*Math.PI/COIN_HOVER_PERIOD_FRAMES) );	// sinusoidal hovering
+		this.pos.y = this.startPos.y - COIN_MAX_HOVER_HEIGHT*0.5*(1 - Math.cos((frame - this.creationFrame)*2*Math.PI/COIN_HOVER_PERIOD_FRAMES) );	// sinusoidal hovering
 	}
 	else if(this.state == COIN_STATE_EVAPORATING)
 	{
@@ -1254,11 +1285,26 @@ Camera.prototype.reset_camera = function()
 	this.topLeftDst.y = 0.0;
 }
 
+// return to default camera position/zoom in zero time
+Camera.prototype.hard_reset_camera = function()
+{
+	this.reset_camera();
+	this.topLeft.x = 0;
+	this.topLeft.y = 0;
+	this.zoomExpon = 0;
+}
+
 // deltaScreenCoords is vec2
 // moves camera in the direct of deltaScreenCoords
 Camera.prototype.pan = function(deltaScreenCoords)
 {
 	this.topLeftDst = this.topLeftDst.add(deltaScreenCoords.mult(2**-this.zoomExpon));
+}
+
+// load identity matrix into canvas context without changing camera position/zoom
+Camera.prototype.set_identity_matrix = function()
+{
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 Camera.prototype.set_transform_matrix = function()
@@ -1304,10 +1350,18 @@ Camera.prototype.start_shake = function(shakeDuration, amplitude, numFramesPerJo
 	this.shakeAmplitude = amplitude;
 	this.numFramesPerJolt;
 }
+
+Camera.prototype.stop_shake = function()
+{
+	this.startShakeFrame = -1;
+	this.shakeDuration = 0;
+}
+
 let camera = new Camera();
 let lastCannonHurtFrame = -99999;
 const CANNON_HURT_DURATION = 120;	// flashing invincibility duration frames
 const CANNON_FLASH_PERIOD = 20.4;	// duration in frames
+let cannonHealth;	// number of hits that cannon can take before game over
 
 let crab = load_image('crabBitmap.png');
 let crabClawUpper = load_image('crab claw upper bitmap.png');
@@ -1318,6 +1372,7 @@ let frogJump = load_image('frogJump.png');
 let frogStandShadow = load_image('frogStandShadow.png');
 let frogJumpShadow = load_image('frogJumpShadow.png');
 let coinSheet = load_image('coinSheet.png');
+let heartButt = load_image('heartButt.png');
 
 // draws arg img such that the lineSeg (pic0, pic1) treated as world coords, lines up exactly with [the lineSeg (dst0, dst1) in world coords]
 // reflects images about lineSeg iff boolean arg mustReflect is true
@@ -1375,9 +1430,11 @@ load_sound_from_file(spitSoundPath);
 let coinSoundPath = 'coinClink.wav';
 load_sound_from_file(coinSoundPath);
 
-const GAME_STATE_PLAY_BUTTON = 'GAME_STATE_PLAY_BUTTON';
+const GAME_STATE_UPGRADE = 'GAME_STATE_UPGRADE';
 const GAME_STATE_PLAYING = 'GAME_STATE_PLAYING';
-let gameState = GAME_STATE_PLAYING;
+const GAME_STATE_START = 'GAME_STATE_START';
+const GAME_STATE_RESTART = 'GAME_STATE_RESTART';
+let gameState = GAME_STATE_START;
 
 
 const BUTTON_STATE_OFF = 'BUTTON_STATE_OFF';	// mouse not over
@@ -1414,7 +1471,7 @@ function Button(x, y, w, h, roundCornerRadius, offColor, overColor, downColor, s
 	this.overColor = overColor;
 	this.downColor = downColor;
 	this.strokeColor = strokeColor;
-	this.hasClickedDown = false;	// Boolean whether mouse has clicked down on this buttono
+	this.hasClickedDown = false;	// Boolean whether mouse has clicked down on this button
 }
 Button.prototype = Object.create(Rect.prototype);
 
@@ -1434,6 +1491,7 @@ Button.prototype.contains_vec2 = function(point)
 	return !corners.some(corner => corner.rect.contains_vec2(point) && !does_circle_contain_point(corner.c, this.r, point) );
 }
 
+// must return Boolean whether this button continues existing && is visible after clicking
 Button.prototype.onclick = function()
 {
 	throw new Error('must override pure virtual method Button.onclick()');
@@ -1520,41 +1578,102 @@ Button.prototype.render = function()
 	ctx.fill();
 }
 
-// constructor
-function UpgradeButton(x, y, w, h, roundCornerRadius, offColor, overColor, downColor, strokeColor)
+// constuctor
+function StartGameButton()
 {
-	Button.call(this, x, y, w, h, roundCornerRadius, offColor, overColor, downColor, strokeColor);
+	let x = 20.1, y = 100, w = 160, h = 120;
+	let buttonRoundCornerRadius = 18.5;
+	let buttonOffColor = '#FF000080';
+	let buttonOverColor = '#0000FF80';
+	let buttonDownColor = '#00FF0080';
+	let buttonStrokeColor = 'black';
+	Button.call(this, x, y, w, h, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
 }
-UpgradeButton.prototype = Object.create(Button.prototype);
+StartGameButton.prototype = Object.create(Button.prototype);
+
+StartGameButton.prototype.onclick = function()
+{
+	game.start_playing_game();
+}
+
+// constructor
+function UpgradeForksButton()
+{
+	let x = 50, y = 300, w = 60, h = 60;
+	let buttonRoundCornerRadius = 18.5;
+	let buttonOffColor = '#FF000080';
+	let buttonOverColor = '#0000FF80';
+	let buttonDownColor = '#00FF0080';
+	let buttonStrokeColor = 'black';
+	Button.call(this, x, y, w, h, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
+}
+UpgradeForksButton.prototype = Object.create(Button.prototype);
+
+// whether upgrade is available, regardless of how much money is on hand
+UpgradeForksButton.prototype.can_upgrade = function()
+{
+	return nCannonBulletForks < 7;
+}
 
 let nCannonBulletForks = 1;
-UpgradeButton.prototype.onclick = function()
+UpgradeForksButton.prototype.onclick = function()
 {
-	if (nCoins >= nCannonBulletForks*3)
+	if (this.can_upgrade() && nCoins >= nCannonBulletForks*3)
 	{
 		nCoins -= nCannonBulletForks*3;
 		++nCannonBulletForks;
 	}
 }
 
-UpgradeButton.prototype.render = function()
+UpgradeForksButton.prototype.render = function()
 {
 	Button.prototype.render.call(this);	
 	ctx.font = "20px Courier New";
 	ctx.fillStyle = '#FFFFFFFF';
-	ctx.fillText(`cost to upgrade: ${nCannonBulletForks*3} coins`, this.x, this.y + this.h + 20);
-	ctx.fillText(`number of forks: ${nCannonBulletForks}`, this.x, this.y + this.h + 60);
+	ctx.fillText(`# forks: ${nCannonBulletForks}`, this.x, this.y + this.h + 20);
+	ctx.fillText(`cost: ${this.can_upgrade() ? `${nCannonBulletForks*3} coins` : '---'}`, this.x, this.y + this.h + 40);
 }
 
-let buttonRoundCornerRadius = 18.5;
-let buttonOffColor = '#FF000080';
-let buttonOverColor = '#0000FF80';
-let buttonDownColor = '#00FF0080';
-let buttonStrokeColor = 'black';
-let upgradeButton = new UpgradeButton(50.1, 300, 60, 60, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
-let activeButtons = [];	// Array of (subclasses of) Button
-activeButtons.push(upgradeButton);
+// constructor
+function UpgradeReloadButton()
+{
+	let x = 50, y = 100, w = 60, h = 60;
+	let buttonRoundCornerRadius = 18.5;
+	let buttonOffColor = '#FF000080';
+	let buttonOverColor = '#0000FF80';
+	let buttonDownColor = '#00FF0080';
+	let buttonStrokeColor = 'black';
+	Button.call(this, x, y, w, h, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
+}
+UpgradeReloadButton.prototype = Object.create(Button.prototype);
 
+// whether upgrade is available, regardless of how much money is on hand
+UpgradeReloadButton.prototype.can_upgrade = function()
+{
+	return cannonReloadDuration > 11;
+}
+
+const CANNON_INITIAL_RELOAD_FRAMES = 30;
+let cannonReloadDuration = CANNON_INITIAL_RELOAD_FRAMES;
+UpgradeReloadButton.prototype.onclick = function()
+{
+	if (this.can_upgrade() && nCoins >= 10)
+	{
+		nCoins -= 10;
+		cannonReloadDuration -= 3;
+	}
+}
+
+UpgradeReloadButton.prototype.render = function()
+{
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Courier New";
+	ctx.fillStyle = '#FFFFFFFF';
+	ctx.fillText(`shot delay: ${cannonReloadDuration} frames`, this.x, this.y + this.h + 20);
+	ctx.fillText(`cost: ${this.can_upgrade() ? '10 coins' : '---'}`, this.x, this.y + this.h + 40);
+}
+
+let activeButtons = [];	// Array of (subclasses of) Button
 var game = {
 	// set canvas and create Context
 	
@@ -1566,6 +1685,7 @@ var game = {
 		canvas.style.width = CANVAS_WIDTH.toString() + "px";
 		canvas.style.height = CANVAS_HEIGHT.toString() + "px";
 		calculate_canvas_corner();
+		ctx.textBaseline = 'top';
 		
 		// handle mouse down
 		window.addEventListener('mousedown', function(e){
@@ -1646,94 +1766,87 @@ var game = {
 		
 		const PAN_SPEED = 31.9;
 		window.addEventListener('keydown', function(e){
-			if (e.key == 'p')
-			{
-				gamePaused = !gamePaused;
-				mustImmediatePause = false;
-				console.log('game pause toggle; paused? ', gamePaused ? 'yes' : 'no');
-			}
-			else if(e.key == 'o')
+			if(e.key == 'o')
 			{
 				debugFlailPaused = !debugFlailPaused;
 				console.log('debug flail pause toggle; paused? ', debugFlailPaused ? 'yes' : 'no');
 			}
-			else if(e.key == '.')
+			else if (gameState == GAME_STATE_PLAYING || gameState == GAME_STATE_UPGRADE)
 			{
-				// advance 1 frame, then pause
-				dstCameraRect = {x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT};
-				gamePaused = false;
-				mustImmediatePause = true;
-				console.log('advance 1 frame');
-			}
-			else if(e.key == '8')
-			{
-				camera.zoom_in(mouseLoc);
-			}
-			else if(e.key == '9')
-			{
-				camera.zoom_out(mouseLoc);
-			}
-			else if(e.key == '0')
-			{
-				camera.reset_camera();
-			}
-			else if(e.key == 'w')
-			{
-				camera.pan(new vec2(0, -PAN_SPEED));
-			}
-			else if(e.key == 's')
-			{
-				camera.pan(new vec2(0, +PAN_SPEED));
-			}
-			else if(e.key == 'a')
-			{
-				camera.pan(new vec2(-PAN_SPEED, 0));
-			}
-			else if(e.key == 'd')
-			{
-				camera.pan(new vec2(+PAN_SPEED, 0));
-			}
-			else if(e.key == 'e')
-			{
-				console.log(`world coords: (${mouseLoc.x}, ${mouseLoc.y})`);
-			}
-			else if(e.key == 'f')
-			{
-				gameState = GAME_STATE_PLAYING;
-			}
+				if (e.key == 'p')
+				{
+					gamePaused = !gamePaused;
+					mustImmediatePause = false;
+					console.log('game pause toggle; paused? ', gamePaused ? 'yes' : 'no');
+				}
+				else if(e.key == '.')
+				{
+					// advance 1 frame, then pause
+					dstCameraRect = {x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT};
+					gamePaused = false;
+					mustImmediatePause = true;
+					console.log('advance 1 frame');
+				}
+				else if(!gamePaused)
+				{
+					if(e.key == 'u')
+					{
+						// toggle game state
+						if (gameState == GAME_STATE_PLAYING)
+						{
+							gameState = GAME_STATE_UPGRADE;
+						}
+						else if(gameState == GAME_STATE_UPGRADE)
+						{
+							gameState = GAME_STATE_PLAYING;
+						}
+						else
+						{
+							throw new Error(`invalid game state \"${gameState}\"`);
+						}
+					}
+					if (gameState == GAME_STATE_PLAYING) // only allow camera movements in unpaused playing state
+					{
+						if(e.key == '8')
+						{
+							camera.zoom_in(mouseLoc);
+						}
+						else if(e.key == '9')
+						{
+							camera.zoom_out(mouseLoc);
+						}
+						else if(e.key == '0')
+						{
+							camera.reset_camera();
+						}
+						else if(e.key == 'w')
+						{
+							camera.pan(new vec2(0, -PAN_SPEED));
+						}
+						else if(e.key == 's')
+						{
+							camera.pan(new vec2(0, +PAN_SPEED));
+						}
+						else if(e.key == 'a')
+						{
+							camera.pan(new vec2(-PAN_SPEED, 0));
+						}
+						else if(e.key == 'd')
+						{
+							camera.pan(new vec2(+PAN_SPEED, 0));
+						}
+						else if(e.key == 'e')
+						{
+							console.log(`world coords: (${mouseLoc.x}, ${mouseLoc.y})`);
+						}
+					} // end if gameState == playing
+				} // end if !gamePaused
+			}	// end if gameState == playing || gameState == upgrade
 		}.bind(this));
 
 		// load resources
-		// load grass blade
-		const MIN_OMEGA = 0.02;
-		const MAX_OMEGA = 0.05;
-		const MIN_BLADE_LEN = 18;
-		const MAX_BLADE_LEN = 38;
-		const MIN_AMPLITUDE = Math.PI/14;
-		const MAX_AMPLITUDE = Math.PI/10;
-		const MIN_EQUILIB_THETA = Math.PI*4/3;
-		const MAX_EQUILIB_THETA = Math.PI*5/3;
-		const NUM_GRASS_CLUMPS = 200;
-		const MIN_NUM_BLADES_PER_CLUMP = 3;
-		const MAX_NUM_BLADES_PER_CLUMP = 3;
-		const MAX_CLUMP_DIST_OFFSET = 14.56;
-		for(let i = 0; i < NUM_GRASS_CLUMPS; ++i)
-		{
-			let numBlades = Math.floor(lerp(MIN_NUM_BLADES_PER_CLUMP, MAX_NUM_BLADES_PER_CLUMP+1, Math.random()));
-			let clumpRootPos = new vec2( lerp(0, CANVAS_WIDTH, Math.random()), lerp(0, CANVAS_HEIGHT, Math.random()) );
-			for(let j = 0; j < numBlades; ++j)
-			{
-				let omega = lerp(MIN_OMEGA, MAX_OMEGA, Math.random());
-				let bladeRootPos = clumpRootPos.add(new vec2(MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1), MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1)));	// grass blades nearby but not bullseye-ing clump's root
-				let bladeLen = lerp(MIN_BLADE_LEN, MAX_BLADE_LEN, Math.random());
-				let theta0 = Math.random()*2*Math.PI;
-				let amplitude = lerp(MIN_AMPLITUDE, MAX_AMPLITUDE, Math.random());
-				let equilibTheta = lerp(MIN_EQUILIB_THETA, MAX_EQUILIB_THETA, Math.random());
-				let color = `hsl(${lerp(88, 132, Math.random())}, 100%, ${rnd_btwn(20, 35)}%, 100%)`;
-				let grassBlade = new GrassBlade(bladeRootPos, bladeLen, theta0, omega, amplitude, equilibTheta, color);
-				particleEngine.add_particle(grassBlade);
-			}
-		}
+		this.reset_game();
+		
 	},
 	
 	update: function(){
@@ -1748,8 +1861,8 @@ var game = {
 			const NUM_FRAMES_PER_ENEMY_CRAB_SPAWN = 70;
 			if (frame % NUM_FRAMES_PER_ENEMY_CRAB_SPAWN == 0)
 			{
-				const MIN_ENEMY_SPEED = 0.8;
-				const MAX_ENEMY_SPEED = 1.75;
+				const MIN_ENEMY_SPEED = 0.6;
+				const MAX_ENEMY_SPEED = 1.85;
 				const MIN_ENEMY_RADIUS = 25.5;
 				const MAX_ENEMY_RADIUS = 35.5;
 				const MIN_ENEMY_Y = 130;
@@ -1795,17 +1908,16 @@ var game = {
 			--cannonReloadFramesRemaining;
 			if (cannonReloadFramesRemaining <= 0)
 			{
-				const CANNON_INITIAL_RELOAD_FRAMES = 21;
 				const CANNON_INITIAL_RECOIL_POS = 38;
 				if (mouseDownLoc)
 				{
 					// fire again
 					cannonBarrelRecoilPos = CANNON_INITIAL_RECOIL_POS;
-					cannonReloadFramesRemaining = mouseDownLoc ? CANNON_INITIAL_RELOAD_FRAMES : 0;
+					cannonReloadFramesRemaining = mouseDownLoc ? cannonReloadDuration : 0;
 					
 					const BULLET_SPEED = 3.7;
-					const BULLET_RADIUS = 13.0;
-					const BULLET_FORK_ARC = Math.PI/8.23;	// angle of arc of a single fork in adjacent bullets
+					const BULLET_RADIUS = 8.0;
+					const BULLET_FORK_ARC = Math.PI/17.23;	// angle of arc of a single fork in adjacent bullets
 					let direc0 = new vec2(mouseLoc.x - CANNON_X, mouseLoc.y - CANNON_Y);
 					direc0 = vec2.is_same_loc(direc0, new vec2(0, 0)) ? new vec2(0, -1) : direc0;	// handle zero direction
 					let bulletTheta0 = Math.atan2(direc0.y, direc0.x) - BULLET_FORK_ARC*(nCannonBulletForks-1)/2;
@@ -1876,22 +1988,31 @@ var game = {
 				let e1 = enemies[e];
 				if (are_circles_colliding(new vec2(CANNON_X, CANNON_Y), e1.pos, new vec2(0, 0), e1.vel, CANNON_BASE_RADIUS, e1.radius))
 				{
-					if (frame >= lastCannonHurtFrame + CANNON_HURT_DURATION)
-					{
-						// enemy has hurt cannon. Begin cannon flashing and camera shake
-						lastCannonHurtFrame = frame;
-						const CANNON_HURT_SHAKE_DURATION = 10;
-						const CANNON_HURT_SHAKE_AMPLITUDE = 5;
-						const CANNON_HURT_NUM_FRAMES_PER_JOLT = 2;
-						camera.start_shake(CANNON_HURT_SHAKE_DURATION, CANNON_HURT_SHAKE_AMPLITUDE, CANNON_HURT_NUM_FRAMES_PER_JOLT);
-						play_sound_from_file(snareSoundPath);
-					}
-					
 					// destroy enemy
 					particleEngine.create_star_explosion(e1.pos);
 					e1.isActive = false;
 					enemies = enemies.slice(0, e).concat(enemies.slice(e+1));
 					play_sound_from_file(thudSoundPath);
+
+					if (frame >= lastCannonHurtFrame + CANNON_HURT_DURATION)
+					{
+						// enemy has hurt cannon
+						play_sound_from_file(snareSoundPath);
+						
+						--cannonHealth;
+						if (cannonHealth == 0)
+						{
+							game.reset_game(true);
+							return;	// immediately abort, since running through the remaining enemy/cannon collisions are invalid
+						}
+						
+						// Begin cannon flashing and camera shake
+						lastCannonHurtFrame = frame;
+						const CANNON_HURT_SHAKE_DURATION = 10;
+						const CANNON_HURT_SHAKE_AMPLITUDE = 5;
+						const CANNON_HURT_NUM_FRAMES_PER_JOLT = 2;
+						camera.start_shake(CANNON_HURT_SHAKE_DURATION, CANNON_HURT_SHAKE_AMPLITUDE, CANNON_HURT_NUM_FRAMES_PER_JOLT);
+					}
 				}
 			}
 			
@@ -1908,6 +2029,14 @@ var game = {
 			// camera zoom/pan decay
 			camera.update();
 			
+			// fps
+			let currTime = new Date().getTime();
+			if (frame % NUM_FRAMES_PER_FPS_UPDATE == 0)
+			{
+				document.getElementById("fpsDisplay").innerText = 'FPS: '.concat((1000/(currTime-prevFrameTime)).toFixed(1));
+			}
+			prevFrameTime = currTime;
+			
 			++frame;
 		}
 		
@@ -1915,14 +2044,6 @@ var game = {
 		{
 			++debugFrame;
 		}
-		
-		// fps
-		let currTime = new Date().getTime();
-		if (frame % NUM_FRAMES_PER_FPS_UPDATE == 0)
-		{
-			document.getElementById("fpsDisplay").innerText = 'FPS: '.concat((1000/(currTime-prevFrameTime)).toFixed(1));
-		}
-		prevFrameTime = currTime;
 	},
 
 	render: function(){
@@ -1934,84 +2055,199 @@ var game = {
 		// set camera transform
 		camera.set_transform_matrix();
 		
-		// render particles
-		particleEngine.render();
-		
-		// render cursor crosshair
-		const CURSOR_RADIUS = 5;
-		const CURSOR_COLOR = '#FFFF00FF';
-		mouseLoc.render_ring(CURSOR_COLOR, CURSOR_RADIUS);
-		new LineSeg(new vec2(mouseLoc.x, mouseLoc.y-2*CURSOR_RADIUS),
-					new vec2(mouseLoc.x, mouseLoc.y+2*CURSOR_RADIUS)).render(CURSOR_COLOR);
-		new LineSeg(new vec2(mouseLoc.x-2*CURSOR_RADIUS, mouseLoc.y),
-					new vec2(mouseLoc.x+2*CURSOR_RADIUS, mouseLoc.y)).render(CURSOR_COLOR);
-		new LineSeg(new vec2(CANNON_X, CANNON_Y), mouseLoc).render(CURSOR_COLOR);
-		
-		// render coin collect circle around cursor
-		const COIN_COLLECT_CIRCLE_COLOR = '#A4A4A480';
-		mouseLoc.render_ring(COIN_COLLECT_CIRCLE_COLOR, CURSOR_COIN_COLLECT_RADIUS);
-		
-		// render cannon base, flashing red if recently hurt
-		const CANNON_BASE_COLOR = '#808090';
-		const CANNON_RING_COLOR = '#223322';
-		const CANNON_BASE_HURT_COLOR = '#B08090';
-		const CANNON_RING_HURT_COLOR = '#623322';
-		let isCannonRed = frame < lastCannonHurtFrame + CANNON_HURT_DURATION ? (frame % CANNON_FLASH_PERIOD < CANNON_FLASH_PERIOD/2) : false;
-		let cannonBaseColor = isCannonRed ? CANNON_BASE_HURT_COLOR : CANNON_BASE_COLOR;
-		let cannonRingColor = isCannonRed ? CANNON_RING_HURT_COLOR : CANNON_RING_COLOR;
-		new vec2(CANNON_X, CANNON_Y).render_solid(cannonBaseColor, CANNON_BASE_RADIUS);
-		new vec2(CANNON_X, CANNON_Y).render_ring (cannonRingColor, CANNON_BASE_RADIUS);
-		
-		// render cannon barrel
-		ctx.fillStyle = cannonBaseColor;
-		ctx.strokeStyle = cannonRingColor;
-		ctx.beginPath();
-		const BARREL_FRONT_DIAMETER = 15;
-		const BARREL_REAR_DIAMETER = 20;
-		const BARREL_NOZZLE_LENGTH = 40;
-		const BARREL_RADIAL_OFFSET = 30;
-		cannonTheta = Math.atan2(CANNON_X - mouseLoc.x, -(CANNON_Y - mouseLoc.y));	// angle in radians clockwise from positive y-axis
-		let COS = Math.cos(cannonTheta);
-		let SIN = Math.sin(cannonTheta);
-		[new vec2( BARREL_FRONT_DIAMETER/2,  BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
-		 new vec2( BARREL_REAR_DIAMETER /2, -BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
-		 new vec2(-BARREL_REAR_DIAMETER /2, -BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
-		 new vec2(-BARREL_FRONT_DIAMETER/2,  BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
-		 undefined].forEach((v, i, arr) => {
-			v = arr[i%4];	// wrap 4th to first vertex
-			let x = v.x*COS - v.y*SIN;	// rotate cannon barrel to face cursor
-			let y = v.x*SIN + v.y*COS;
-			if (i == 0)
-			{
-				ctx.moveTo(x + CANNON_X, y + CANNON_Y);
-			}
-			else
-			{
-				ctx.lineTo(x + CANNON_X, y + CANNON_Y);
-			}
-		});
-		ctx.stroke();
-		ctx.fill();
-		
-		// render game level text
-		if (gameState == GAME_STATE_PLAY_BUTTON)
+		if (gameState == GAME_STATE_PLAYING)
 		{
-			ctx.font = "31px Arial";
+			// render particles
+			particleEngine.render();
+			
+			// render cursor crosshair
+			const CURSOR_RADIUS = 5;
+			const CURSOR_COLOR = '#FFFF00FF';
+			mouseLoc.render_ring(CURSOR_COLOR, CURSOR_RADIUS);
+			new LineSeg(new vec2(mouseLoc.x, mouseLoc.y-2*CURSOR_RADIUS),
+						new vec2(mouseLoc.x, mouseLoc.y+2*CURSOR_RADIUS)).render(CURSOR_COLOR);
+			new LineSeg(new vec2(mouseLoc.x-2*CURSOR_RADIUS, mouseLoc.y),
+						new vec2(mouseLoc.x+2*CURSOR_RADIUS, mouseLoc.y)).render(CURSOR_COLOR);
+			new LineSeg(new vec2(CANNON_X, CANNON_Y), mouseLoc).render(CURSOR_COLOR);
+			
+			// render coin collect circle around cursor
+			const COIN_COLLECT_CIRCLE_COLOR = '#A4A4A480';
+			mouseLoc.render_ring(COIN_COLLECT_CIRCLE_COLOR, CURSOR_COIN_COLLECT_RADIUS);
+			
+			// render cannon base, flashing red if recently hurt
+			const CANNON_BASE_COLOR = '#808090';
+			const CANNON_RING_COLOR = '#223322';
+			const CANNON_BASE_HURT_COLOR = '#B08090';
+			const CANNON_RING_HURT_COLOR = '#623322';
+			let isCannonRed = frame < lastCannonHurtFrame + CANNON_HURT_DURATION ? (frame % CANNON_FLASH_PERIOD < CANNON_FLASH_PERIOD/2) : false;
+			let cannonBaseColor = isCannonRed ? CANNON_BASE_HURT_COLOR : CANNON_BASE_COLOR;
+			let cannonRingColor = isCannonRed ? CANNON_RING_HURT_COLOR : CANNON_RING_COLOR;
+			new vec2(CANNON_X, CANNON_Y).render_solid(cannonBaseColor, CANNON_BASE_RADIUS);
+			new vec2(CANNON_X, CANNON_Y).render_ring (cannonRingColor, CANNON_BASE_RADIUS);
+			
+			// render cannon barrel
+			ctx.fillStyle = cannonBaseColor;
+			ctx.strokeStyle = cannonRingColor;
+			ctx.beginPath();
+			const BARREL_FRONT_DIAMETER = 15;
+			const BARREL_REAR_DIAMETER = 20;
+			const BARREL_NOZZLE_LENGTH = 40;
+			const BARREL_RADIAL_OFFSET = 30;
+			cannonTheta = Math.atan2(CANNON_X - mouseLoc.x, -(CANNON_Y - mouseLoc.y));	// angle in radians clockwise from positive y-axis
+			let COS = Math.cos(cannonTheta);
+			let SIN = Math.sin(cannonTheta);
+			[new vec2( BARREL_FRONT_DIAMETER/2,  BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+			 new vec2( BARREL_REAR_DIAMETER /2, -BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+			 new vec2(-BARREL_REAR_DIAMETER /2, -BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+			 new vec2(-BARREL_FRONT_DIAMETER/2,  BARREL_NOZZLE_LENGTH/2 + BARREL_RADIAL_OFFSET - cannonBarrelRecoilPos),
+			 undefined].forEach((v, i, arr) => {
+				v = arr[i%4];	// wrap 4th to first vertex
+				let x = v.x*COS - v.y*SIN;	// rotate cannon barrel to face cursor
+				let y = v.x*SIN + v.y*COS;
+				if (i == 0)
+				{
+					ctx.moveTo(x + CANNON_X, y + CANNON_Y);
+				}
+				else
+				{
+					ctx.lineTo(x + CANNON_X, y + CANNON_Y);
+				}
+			});
+			ctx.stroke();
+			ctx.fill();
+			
+			// render number of coins on hand
+			this.render_coin_display();
+			
+			// render cannon health icons
+			camera.set_identity_matrix();
+			const CANNON_HEALTH_ICON_SPACING = 40;
+			for(let i = cannonHealth-1; i >= 0; --i)
+			{
+				apply_image(heartButt, CANNON_X - CANNON_BASE_RADIUS + i*CANNON_HEALTH_ICON_SPACING, CANNON_Y + CANNON_BASE_RADIUS*1.2)
+			}
+			
+			if (gamePaused)
+			{
+				this.render_pause_overlay();
+			}
+			
+			// render other things
+		}
+		else if (gameState == GAME_STATE_UPGRADE)
+		{
+			// render active buttons
+			activeButtons.forEach(bt => bt.render());
+			
+			// render number of coins on hand
+			this.render_coin_display();
+			
+			camera.set_identity_matrix();
+			ctx.font = "40px Courier New";
 			ctx.fillStyle = '#FFFFFFFF';
-			ctx.strokeStyle = '#FFFF00FF';
-			ctx.fillText('READY TO PLAY, press f to begin', 100, 300);
-			ctx.strokeText('READY TO PLAY, press f to begin', 100, 300);
+			ctx.fillText('UPGRADE SCREEN', 50, 10);
+			
+			if (gamePaused)
+			{
+				this.render_pause_overlay();
+			}
+			camera.set_transform_matrix();
+		}
+		else if (gameState == GAME_STATE_START || gameState == GAME_STATE_RESTART)
+		{
+			let titleText = gameState == GAME_STATE_START ? 'CLICK BUTTON TO BEGIN PLAYING' : 'GAME OVER, CLICK BUTTON TO RESTART';
+			ctx.font = "30px Courier New";
+			ctx.fillStyle = '#FFFFFFFF';
+			ctx.fillText(titleText, 50, 10);
+			
+			// render active buttons
+			activeButtons.forEach(bt => bt.render());
 		}
 		
-		// render number of coins on hand
+		// render other things
+	},
+	
+	render_coin_display: function()
+	{
+		camera.set_identity_matrix();
 		ctx.font = "20px Courier New";
 		ctx.fillStyle = '#FFFFFFFF';
-		ctx.fillText(`coins: ${nCoins}`, 80, 180);
+		const COIN_DISPLAY_MINUS_X = 150;
+		const COIN_DISPLAY_Y = 10;
+		let coinStr = `coins: ${nCoins}`;
+		ctx.fillText(coinStr, CANVAS_WIDTH - COIN_DISPLAY_MINUS_X, COIN_DISPLAY_Y);
+		camera.set_transform_matrix();
+	},
+	
+	// go to (or return to) start screen and reload background grass
+	reset_game: function(isGameOver = false)
+	{
+		particleEngine.reset_engine();
+		activeButtons.splice(0);
+		nCannonBulletForks = 1;
+		nCoins = 0;
+		lastCannonHurtFrame = -99999;
+		cannonHealth = 5;
+		cannonReloadFramesRemaining = 0;
+		gameState = isGameOver ? GAME_STATE_RESTART : GAME_STATE_START;
+		camera.stop_shake();
+		camera.hard_reset_camera();
 		
-		// render active buttons
-		activeButtons.forEach(bt => bt.render());
+		activeButtons.push(new StartGameButton());
 		
-		// render other things
+		// load grass blades
+		const MIN_OMEGA = 0.02;
+		const MAX_OMEGA = 0.05;
+		const MIN_BLADE_LEN = 18;
+		const MAX_BLADE_LEN = 38;
+		const MIN_AMPLITUDE = Math.PI/14;
+		const MAX_AMPLITUDE = Math.PI/10;
+		const MIN_EQUILIB_THETA = Math.PI*4/3;
+		const MAX_EQUILIB_THETA = Math.PI*5/3;
+		const NUM_GRASS_CLUMPS = 200;
+		const MIN_NUM_BLADES_PER_CLUMP = 3;
+		const MAX_NUM_BLADES_PER_CLUMP = 3;
+		const MAX_CLUMP_DIST_OFFSET = 14.56;
+		for(let i = 0; i < NUM_GRASS_CLUMPS; ++i)
+		{
+			let numBlades = Math.floor(lerp(MIN_NUM_BLADES_PER_CLUMP, MAX_NUM_BLADES_PER_CLUMP+1, Math.random()));
+			let clumpRootPos = new vec2( lerp(0, CANVAS_WIDTH, Math.random()), lerp(0, CANVAS_HEIGHT, Math.random()) );
+			for(let j = 0; j < numBlades; ++j)
+			{
+				let omega = lerp(MIN_OMEGA, MAX_OMEGA, Math.random());
+				let bladeRootPos = clumpRootPos.add(new vec2(MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1), MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1)));	// grass blades nearby but not bullseye-ing clump's root
+				let bladeLen = lerp(MIN_BLADE_LEN, MAX_BLADE_LEN, Math.random());
+				let theta0 = Math.random()*2*Math.PI;
+				let amplitude = lerp(MIN_AMPLITUDE, MAX_AMPLITUDE, Math.random());
+				let equilibTheta = lerp(MIN_EQUILIB_THETA, MAX_EQUILIB_THETA, Math.random());
+				let color = `hsl(${lerp(88, 132, Math.random())}, 100%, ${rnd_btwn(20, 35)}%, 100%)`;
+				let grassBlade = new GrassBlade(bladeRootPos, bladeLen, theta0, omega, amplitude, equilibTheta, color);
+				particleEngine.add_particle(grassBlade);
+			}
+		}
+	},
+	
+	start_playing_game: function()
+	{
+		gameState = GAME_STATE_PLAYING;
+		activeButtons.splice(0);	// delete [startPlayingGame] button
+		activeButtons.push(new UpgradeForksButton());
+		activeButtons.push(new UpgradeReloadButton());
+	},
+	
+	render_pause_overlay: function()
+	{
+		camera.set_identity_matrix();
+		const PAUSE_SCREEN_COLOR = '#00000090';
+		ctx.fillStyle = PAUSE_SCREEN_COLOR;
+		ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+		
+		const PAUSE_SCREEN_TEXT_COLOR = '#EEFFEEFF';
+		ctx.font = '80px Courier New';
+		let pauseText = 'GAME PAUSED';
+		ctx.fillStyle = PAUSE_SCREEN_TEXT_COLOR;
+		ctx.fillText(pauseText, CANVAS_WIDTH/2 - ctx.measureText(pauseText).width/2, CANVAS_HEIGHT/2);
+		camera.set_transform_matrix();
 	},
 	
 	gameLoop: function(){
