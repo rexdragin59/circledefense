@@ -8,7 +8,7 @@
 <body onload = "startGame()">
 <div>
 	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
-	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins, press (u) to toggle between upgrade and playing gameStates</p>
+	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins, press (u) to toggle between upgrade and playing gameStates, pause (p) to mute music</p>
 	<div id="fpsDisplay" style="user-select: none">FPS:</div>
 	<p>
 		<canvas id="myCanvas" width="600" height="480" style="border: 2px solid black;"></canvas>
@@ -843,20 +843,48 @@ MovingParticle.prototype.update = function()
 
 // constructor
 // generic enemy class that specific enemies can subclass
-function Enemy(pos, vel, radius)
+function Enemy(pos, vel, radius, health)
 {
-	MovingParticle.call(this, pos, vel, radius);
+	MovingParticle.call(this, pos, vel, radius, health);
+	this.health = health;	// MovingParticle.is_dead() is still the preferred way to signal that an Enemy is dead
 }
 Enemy.prototype = Object.create(MovingParticle.prototype);
 
+// can override this virtual function to apply visual effects like flashing white/red to indicate damage taken
+Enemy.prototype.take_damage = function(atk)
+{
+	this.health -= atk;
+}
+
 
 // constructor
-function EnemyCrab(pos, vel, radius)
+function EnemyCrab(pos, vel, radius, health)
 {
-	Enemy.call(this, pos, vel, radius);
+	Enemy.call(this, pos, vel, radius, health);
 	this.startAnimFrame = -99999;	// frame that crab claw pinching animation started
 }
 EnemyCrab.prototype = Object.create(Enemy.prototype);
+
+// static method returns new EnemyCrab
+EnemyCrab.create_random_crab = function()
+{
+	const MIN_ENEMY_SPEED = 0.6;
+	const MAX_ENEMY_SPEED = 1.85;
+	const MIN_ENEMY_RADIUS = 25.5;
+	const MAX_ENEMY_RADIUS = 35.5;
+	const MIN_ENEMY_Y = 130;
+	const MAX_ENEMY_Y = 230;
+	const MAX_TARGET_OFFSET = 25;
+	const CRAB_HEALTH = 0.9;
+	let radius = Math.random()*(MAX_ENEMY_RADIUS-MIN_ENEMY_RADIUS)+MIN_ENEMY_RADIUS;
+	let x = Math.random() < 0.5 ? -radius+1 : CANVAS_WIDTH+radius-1;	// barely onscreen to avoid being deleted immediately
+	let y = rnd_btwn(MIN_ENEMY_Y, MAX_ENEMY_Y);
+	let pos = new vec2(x, y);
+	let targetPos = new vec2(CANNON_X + MAX_TARGET_OFFSET*(Math.random()*2-1), CANNON_Y + MAX_TARGET_OFFSET*(Math.random()*2-1));
+	let speed = (MAX_ENEMY_SPEED - MIN_ENEMY_SPEED)*Math.random() + MIN_ENEMY_SPEED;
+	let vel = targetPos.subtract(pos).normalize().mult(speed);
+	return new EnemyCrab(pos, vel, radius, CRAB_HEALTH);
+}
 
 const TOTAL_ANIM_FRAMES = 20;
 EnemyCrab.prototype.is_animating = function()
@@ -927,16 +955,35 @@ EnemyCrab.prototype.render = function()
 // constructor
 const FROG_JUMP_PERIOD = 120;
 const FROG_JUMP_ARC_DURATION = 90;
-function EnemyFrog(pos, jumpDisplacement, radius, initialJumpDelayFrames)
+function EnemyFrog(pos, jumpDisplacement, radius, health)
 {
-	Enemy.call(this, pos, new vec2(0, 0), radius);
+	Enemy.call(this, pos, new vec2(0, 0), radius, health);
 	this.jumpDisplacement = jumpDisplacement;	// vec2 in world coords that frog moves each time it jumps
 	this.lastGroundPos = pos.clone();	// position where frog last touched ground, in world coords
 	this.isJumping = false;
-	this.lastJumpFrame = frame + FROG_JUMP_PERIOD - initialJumpDelayFrames;
+	this.lastJumpFrame = frame + FROG_JUMP_PERIOD;
 	this.groundPos = pos.clone();	// current position projected onto the ground
+	this.nHurtFramesRemaining = 0;	// number of frames that this frog will be flashing white
 }
 EnemyFrog.prototype = Object.create(Enemy.prototype);
+
+// static method returns new EnemyFrog
+EnemyFrog.create_random_frog = function()
+{
+	const MIN_ENEMY_RADIUS = 15.5;
+	const MAX_ENEMY_RADIUS = 55.5;
+	const FROG_HEALTH = 2.1;
+	let radius = rnd_btwn(MIN_ENEMY_RADIUS, MAX_ENEMY_RADIUS);
+	const MIN_ENEMY_Y = 130;
+	const MAX_ENEMY_Y = 230;
+	let x = Math.random()*CANVAS_WIDTH;
+	let y = -radius+1;	// barely onscreen to avoid being deleted immediately
+	const MAX_TARGET_OFFSET = 25;
+	let targetPos = new vec2(CANNON_X + MAX_TARGET_OFFSET*(Math.random()*2-1), CANNON_Y + MAX_TARGET_OFFSET*(Math.random()*2-1));
+	let pos = new vec2(x, y);
+	let jumpDisplacement = targetPos.subtract(pos).mult(0.23);
+	return new EnemyFrog(pos, jumpDisplacement, radius, FROG_HEALTH);
+}
 
 // [still onscreen?] using groundPos
 EnemyFrog.prototype.is_dead = function()
@@ -950,7 +997,14 @@ EnemyFrog.prototype.is_dead = function()
 
 EnemyFrog.prototype.get_y_priority = function()
 {
-	return this.pos.y + (417-263.2)/282*this.radius;	// y-position at bottom of feet
+	return this.groundPos.y + (417-263.2)/282*this.radius;	// y-position at bottom of feet
+}
+
+EnemyFrog.prototype.take_damage = function(atk)
+{
+	const HURT_FLASH_DURATION = 6;
+	this.health -= atk;
+	this.nHurtFramesRemaining = HURT_FLASH_DURATION;
 }
 
 EnemyFrog.prototype.update = function()
@@ -975,6 +1029,10 @@ EnemyFrog.prototype.update = function()
 			this.isJumping = false;
 			this.lastGroundPos = this.pos;
 		}
+	}
+	if (this.nHurtFramesRemaining > 0)
+	{
+		--this.nHurtFramesRemaining;
 	}
 }
 
@@ -1002,7 +1060,8 @@ EnemyFrog.prototype.render = function()
 		// render jumping frog
 		let frogJumpDst0 = frogNorm0.mult(this.radius).add(this.pos);
 		let frogJumpDst1 = frogNorm1.mult(this.radius).add(this.pos);
-		draw_image_align_line_segs(frogJump, frogPic0, frogJumpDst0, frogPic1, frogJumpDst1);
+		let img = this.nHurtFramesRemaining > 0 ? frogHurtJump : frogJump;	// number of frames that this frog will be flashing white
+		draw_image_align_line_segs(img, frogPic0, frogJumpDst0, frogPic1, frogJumpDst1);
 	}
 	else
 	{
@@ -1016,7 +1075,8 @@ EnemyFrog.prototype.render = function()
 		// render standing frog
 		let frogStandDst0 = frogNorm0.mult(this.radius).add(this.pos);
 		let frogStandDst1 = frogNorm1.mult(this.radius).add(this.pos);
-		draw_image_align_line_segs(frogStand, frogPic0, frogStandDst0, frogPic1, frogStandDst1);
+		let img = this.nHurtFramesRemaining > 0 ? frogHurtStand : frogStand;
+		draw_image_align_line_segs(img, frogPic0, frogStandDst0, frogPic1, frogStandDst1);
 	}
 }
 
@@ -1237,6 +1297,7 @@ Coin.prototype.render = function()
 
 const CURSOR_COIN_COLLECT_RADIUS = 30;
 let nCoins = 0;
+let nCoinsFinalScore = 0;
 
 // constructor
 function Camera()
@@ -1368,7 +1429,9 @@ let crabClawUpper = load_image('crab claw upper bitmap.png');
 let crabClawLower = load_image('crab claw lower bitmap.png');
 let crabClawWhole = load_image('crab claw whole bitmap.png');
 let frogStand = load_image('frogStand.png');
+let frogHurtStand = load_image('frogHurtStand.png');
 let frogJump = load_image('frogJump.png');
+let frogHurtJump = load_image('frogHurtJump.png');
 let frogStandShadow = load_image('frogStandShadow.png');
 let frogJumpShadow = load_image('frogJumpShadow.png');
 let coinSheet = load_image('coinSheet.png');
@@ -1376,7 +1439,8 @@ let heartButt = load_image('heartButt.png');
 
 // draws arg img such that the lineSeg (pic0, pic1) treated as world coords, lines up exactly with [the lineSeg (dst0, dst1) in world coords]
 // reflects images about lineSeg iff boolean arg mustReflect is true
-function draw_image_align_line_segs(img, pic0, dst0, pic1, dst1, mustReflect = false)
+// can specify srcRect (Rect object) to render rectangle-clipped source instead of entire source
+function draw_image_align_line_segs(img, pic0, dst0, pic1, dst1, mustReflect = false, srcRect = undefined)
 {
 	if (vec2.is_same_loc(pic0, pic1))
 	{
@@ -1404,7 +1468,17 @@ function draw_image_align_line_segs(img, pic0, dst0, pic1, dst1, mustReflect = f
 	}
 	ctx.rotate(-thetaPic);
 	ctx.translate(-pic0.x, -pic0.y);
-	apply_image(img, 0, 0);
+	
+	if (srcRect)	// clip source Rect if needed
+	{
+		let alpha = 1.0;
+		let dstRect = new Rect(0, 0, srcRect.w, srcRect.h);
+		apply_image_precise(img, alpha, srcRect, dstRect);
+	}
+	else
+	{	// otherwise render entire src img
+		apply_image(img, 0, 0);
+	}
 	ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);		// reset transformation matrix
 }
 
@@ -1421,6 +1495,7 @@ function play_sound_from_file(path)
 		audio.play();
 	});
 }
+
 let thudSoundPath = 'thud2.wav';
 load_sound_from_file(thudSoundPath);
 let snareSoundPath = 'snare.wav';
@@ -1429,6 +1504,46 @@ let spitSoundPath = 'spit.wav';
 load_sound_from_file(spitSoundPath);
 let coinSoundPath = 'coinClink.wav';
 load_sound_from_file(coinSoundPath);
+let birdAudio;
+let tapSoundPath = 'tap.wav';
+load_sound_from_file(tapSoundPath);
+
+const MUSIC_PLAY = 'MUSIC_PLAY';
+const MUSIC_PAUSE = 'MUSIC_PAUSE';
+function set_music_pause_play(musicPausePlay)
+{
+	if (birdAudio)
+	{
+		if (musicPausePlay == MUSIC_PLAY)
+		{
+			birdAudio.play();
+		}
+		else if(musicPausePlay == MUSIC_PAUSE)
+		{
+			birdAudio.pause();
+		}
+		else
+		{
+			throw new Error(`invalid musicPausePlay arg: ${musicPausePlay}`);
+		}
+	}
+}
+
+function toggle_music_pause_play()
+{
+	if (birdAudio)
+	{
+		if (birdAudio.paused)
+		{
+			birdAudio.play();
+		}
+		else
+		{
+			birdAudio.pause();
+		}
+	}
+}
+
 
 const GAME_STATE_UPGRADE = 'GAME_STATE_UPGRADE';
 const GAME_STATE_PLAYING = 'GAME_STATE_PLAYING';
@@ -1593,7 +1708,7 @@ StartGameButton.prototype = Object.create(Button.prototype);
 
 StartGameButton.prototype.onclick = function()
 {
-	game.start_playing_game();
+	game.play_next_level();	// calling game.play_next_level() is ignored if birdAudio not loaded
 }
 
 // constructor
@@ -1654,7 +1769,7 @@ UpgradeReloadButton.prototype.can_upgrade = function()
 }
 
 const CANNON_INITIAL_RELOAD_FRAMES = 30;
-let cannonReloadDuration = CANNON_INITIAL_RELOAD_FRAMES;
+let cannonReloadDuration = 0;
 UpgradeReloadButton.prototype.onclick = function()
 {
 	if (this.can_upgrade() && nCoins >= 10)
@@ -1673,7 +1788,117 @@ UpgradeReloadButton.prototype.render = function()
 	ctx.fillText(`cost: ${this.can_upgrade() ? '10 coins' : '---'}`, this.x, this.y + this.h + 40);
 }
 
+// constructor
+const BULLET_INITIAL_SPEED = 2.7;
+let bulletSpeed = 0;
+function UpgradeShotSpeedButton()
+{
+	let x = 350, y = 100, w = 60, h = 60;
+	let buttonRoundCornerRadius = 18.5;
+	let buttonOffColor = '#FF000080';
+	let buttonOverColor = '#0000FF80';
+	let buttonDownColor = '#00FF0080';
+	let buttonStrokeColor = 'black';
+	Button.call(this, x, y, w, h, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
+}
+UpgradeShotSpeedButton.prototype = Object.create(Button.prototype);
+
+// whether upgrade is available, regardless of how much money is on hand
+UpgradeShotSpeedButton.prototype.can_upgrade = function()
+{
+	return bulletSpeed < 10;
+}
+
+UpgradeShotSpeedButton.prototype.onclick = function()
+{
+	if (this.can_upgrade() && nCoins >= 4)
+	{
+		nCoins -= 4;
+		bulletSpeed += 0.5;
+	}
+}
+
+UpgradeShotSpeedButton.prototype.render = function()
+{
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Courier New";
+	ctx.fillStyle = '#FFFFFFFF';
+	ctx.fillText(`shot speed: ${bulletSpeed}`, this.x, this.y + this.h + 20);
+	ctx.fillText(`cost: ${this.can_upgrade() ? '4 coins' : '---'}`, this.x, this.y + this.h + 40);
+}
+
+// constructor
+const BULLET_INITIAL_ATK_POWER = 1.0;	// damage dealt per bullet
+let bulletAtkPower = 0;
+function UpgradeBulletAtkPowerButton()
+{
+	let x = 350, y = 300, w = 60, h = 60;
+	let buttonRoundCornerRadius = 18.5;
+	let buttonOffColor = '#FF000080';
+	let buttonOverColor = '#0000FF80';
+	let buttonDownColor = '#00FF0080';
+	let buttonStrokeColor = 'black';
+	Button.call(this, x, y, w, h, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
+}
+UpgradeBulletAtkPowerButton.prototype = Object.create(Button.prototype);
+
+// whether upgrade is available, regardless of how much money is on hand
+UpgradeBulletAtkPowerButton.prototype.can_upgrade = function()
+{
+	return bulletAtkPower < 3;
+}
+
+UpgradeBulletAtkPowerButton.prototype.onclick = function()
+{
+	if (this.can_upgrade() && nCoins >= 7)
+	{
+		nCoins -= 7;
+		bulletAtkPower += 0.2;
+	}
+}
+
+UpgradeBulletAtkPowerButton.prototype.render = function()
+{
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Courier New";
+	ctx.fillStyle = '#FFFFFFFF';
+	ctx.fillText(`atk: ${bulletAtkPower}`, this.x, this.y + this.h + 20);
+	ctx.fillText(`cost: ${this.can_upgrade() ? '7 coins' : '---'}`, this.x, this.y + this.h + 40);
+}
+
+// constructor
+function FinishedUpgradesButton()
+{
+	let x = 550, y = 100, w = 40, h = 40;
+	let buttonRoundCornerRadius = 5.0;
+	let buttonOffColor = '#FF000080';
+	let buttonOverColor = '#0000FF80';
+	let buttonDownColor = '#00FF0080';
+	let buttonStrokeColor = 'black';
+	Button.call(this, x, y, w, h, buttonRoundCornerRadius, buttonOffColor, buttonOverColor, buttonDownColor, buttonStrokeColor);
+}
+FinishedUpgradesButton.prototype = Object.create(Button.prototype);
+
+FinishedUpgradesButton.prototype.onclick = function()
+{
+	game.play_next_level();
+}
+
+FinishedUpgradesButton.prototype.render = function()
+{
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Courier New";
+	ctx.fillStyle = '#FFFFFFFF';
+	ctx.fillText(`next level`, this.x, this.y + this.h + 20);
+}
+
 let activeButtons = [];	// Array of (subclasses of) Button
+let enemySpawnTimelines;	// Array of [Array of {enemyStr: String denoting which enemy type, spawnFrame: frameNum} sorted from lowest .frameNum to highest .frameNum], one element for each level
+let levelStartFrame = 0;
+let currLevel = -1;
+let nextEnemySpawnIndex = 0;
+let levelCompleteFrame = undefined;	// first frame where all enemies have been killed; undefined if level is not yet complete
+
 var game = {
 	// set canvas and create Context
 	
@@ -1778,6 +2003,10 @@ var game = {
 					gamePaused = !gamePaused;
 					mustImmediatePause = false;
 					console.log('game pause toggle; paused? ', gamePaused ? 'yes' : 'no');
+					if (gameState == GAME_STATE_PLAYING)
+					{
+						toggle_music_pause_play();	// do not play music while in upgrade screen
+					}
 				}
 				else if(e.key == '.')
 				{
@@ -1786,25 +2015,10 @@ var game = {
 					gamePaused = false;
 					mustImmediatePause = true;
 					console.log('advance 1 frame');
+					set_music_pause_play(MUSIC_PAUSE);
 				}
 				else if(!gamePaused)
 				{
-					if(e.key == 'u')
-					{
-						// toggle game state
-						if (gameState == GAME_STATE_PLAYING)
-						{
-							gameState = GAME_STATE_UPGRADE;
-						}
-						else if(gameState == GAME_STATE_UPGRADE)
-						{
-							gameState = GAME_STATE_PLAYING;
-						}
-						else
-						{
-							throw new Error(`invalid game state \"${gameState}\"`);
-						}
-					}
 					if (gameState == GAME_STATE_PLAYING) // only allow camera movements in unpaused playing state
 					{
 						if(e.key == '8')
@@ -1847,6 +2061,84 @@ var game = {
 		// load resources
 		this.reset_game();
 		
+		// load enemy spawn timeline
+		enemySpawnTimelines = [];
+		let level0 = [];
+		level0.push({enemyStr: 'crab', spawnFrame: 60*0+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*1+100});
+		level0.push({enemyStr: 'frog', spawnFrame: 60*1.5+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*2+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*3+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*4+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*5+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*6+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*7+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*8+100});
+		level0.push({enemyStr: 'crab', spawnFrame: 60*9+100});
+		enemySpawnTimelines.push(level0);
+		
+		let level1 = [];
+		level1.push({enemyStr: 'crab', spawnFrame: 52*0+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*1+100});
+		level1.push({enemyStr: 'frog', spawnFrame: 52*1.5+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*2+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*3+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*4+100});
+		level1.push({enemyStr: 'frog', spawnFrame: 52*4.5+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*5+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*6+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*7+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*8+100});
+		level1.push({enemyStr: 'frog', spawnFrame: 52*8.5+100});
+		level1.push({enemyStr: 'crab', spawnFrame: 52*9+100});
+		enemySpawnTimelines.push(level1);
+		
+		let level2 = [];
+		level2.push({enemyStr: 'crab', spawnFrame: 48*0+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*1+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*1+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*2+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*3+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*3+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*4+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*5+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*5+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*6+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*7+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*7+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*8+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*9+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*9+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*10+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*11+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*12+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*13+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*14+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*15+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*16+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*17+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*18+100});
+		level2.push({enemyStr: 'crab', spawnFrame: 48*19+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*19+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*21+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*23+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*25+100});
+		level2.push({enemyStr: 'frog', spawnFrame: 48*27+100});
+		enemySpawnTimelines.push(level2);
+		
+		enemySpawnTimelines.forEach( timeline => timeline.sort((a, b) => a.spawnFrame - b.spawnFrame) );
+		
+		birdAudio = new Audio('birdSongs.mp3');
+		birdAudio.addEventListener('loadeddata', function(){
+			birdAudio.isLoaded = true;
+		});
+		birdAudio.addEventListener('ended', function(){
+			// loop to beginning
+			birdAudio.currentTime = 0;
+			birdAudio.play();
+		});
+		
+		// load more things
 	},
 	
 	update: function(){
@@ -1857,49 +2149,31 @@ var game = {
 				gamePaused = true;
 			}
 			
-			// create random crab enemy
-			const NUM_FRAMES_PER_ENEMY_CRAB_SPAWN = 70;
-			if (frame % NUM_FRAMES_PER_ENEMY_CRAB_SPAWN == 0)
+			// create enemy from timeline
+			if (currLevel < enemySpawnTimelines.length)
 			{
-				const MIN_ENEMY_SPEED = 0.6;
-				const MAX_ENEMY_SPEED = 1.85;
-				const MIN_ENEMY_RADIUS = 25.5;
-				const MAX_ENEMY_RADIUS = 35.5;
-				const MIN_ENEMY_Y = 130;
-				const MAX_ENEMY_Y = 230;
-				const MAX_TARGET_OFFSET = 25;
-				let radius = Math.random()*(MAX_ENEMY_RADIUS-MIN_ENEMY_RADIUS)+MIN_ENEMY_RADIUS;
-				let x = Math.random() < 0.5 ? -radius+1 : CANVAS_WIDTH+radius-1;	// barely onscreen to avoid being deleted immediately
-				let y = rnd_btwn(MIN_ENEMY_Y, MAX_ENEMY_Y);
-				let pos = new vec2(x, y);
-				let targetPos = new vec2(CANNON_X + MAX_TARGET_OFFSET*(Math.random()*2-1), CANNON_Y + MAX_TARGET_OFFSET*(Math.random()*2-1));
-				let speed = (MAX_ENEMY_SPEED - MIN_ENEMY_SPEED)*Math.random() + MIN_ENEMY_SPEED;
-				let vel = targetPos.subtract(pos).normalize().mult(speed);
-				let enemyCrab = new EnemyCrab(pos, vel, radius);
-				particleEngine.add_particle(enemyCrab);
+				let timeline = enemySpawnTimelines[currLevel];
+				if (nextEnemySpawnIndex < timeline.length)
+				{
+					let spawn = timeline[nextEnemySpawnIndex];
+					if (frame - levelStartFrame >= spawn.spawnFrame)
+					{
+						if (spawn.enemyStr == 'crab')
+						{
+							particleEngine.add_particle(EnemyCrab.create_random_crab());
+						}
+						else if(spawn.enemyStr == 'frog')
+						{
+							particleEngine.add_particle(EnemyFrog.create_random_frog());
+						}
+						else
+						{
+							throw new Error(`invalid enemy type: ${spawn.enemyStr}`);
+						}
+						++nextEnemySpawnIndex;
+					}
+				}
 			}
-			
-			// create frog enemy
-			const NUM_FRAMES_PER_ENEMY_FROG_SPAWN = 60;
-			if (frame % NUM_FRAMES_PER_ENEMY_FROG_SPAWN == 0)
-			{
-				const MIN_ENEMY_RADIUS = 15.5;
-				const MAX_ENEMY_RADIUS = 55.5;
-				let radius = rnd_btwn(MIN_ENEMY_RADIUS, MAX_ENEMY_RADIUS);
-				const MIN_ENEMY_Y = 130;
-				const MAX_ENEMY_Y = 230;
-				let x = Math.random()*CANVAS_WIDTH;
-				let y = -radius+1;	// barely onscreen to avoid being deleted immediately
-				const MAX_TARGET_OFFSET = 25;
-				let targetPos = new vec2(CANNON_X + MAX_TARGET_OFFSET*(Math.random()*2-1), CANNON_Y + MAX_TARGET_OFFSET*(Math.random()*2-1));
-				let pos = new vec2(x, y);
-				let jumpDisplacement = targetPos.subtract(pos).mult(0.23);
-				let initialJumpDelayFrames = Math.floor(Math.random()*NUM_FRAMES_PER_ENEMY_FROG_SPAWN);
-				let enemyFrog = new EnemyFrog(pos, jumpDisplacement, radius, initialJumpDelayFrames);
-				particleEngine.add_particle(enemyFrog);
-			}
-			
-			particleEngine.update();
 			
 			// advance cannon recoil timer
 			const CANNON_RECOIL_RECOVER_RATE = 0.93;
@@ -1915,7 +2189,6 @@ var game = {
 					cannonBarrelRecoilPos = CANNON_INITIAL_RECOIL_POS;
 					cannonReloadFramesRemaining = mouseDownLoc ? cannonReloadDuration : 0;
 					
-					const BULLET_SPEED = 3.7;
 					const BULLET_RADIUS = 8.0;
 					const BULLET_FORK_ARC = Math.PI/17.23;	// angle of arc of a single fork in adjacent bullets
 					let direc0 = new vec2(mouseLoc.x - CANNON_X, mouseLoc.y - CANNON_Y);
@@ -1925,7 +2198,7 @@ var game = {
 					{
 						let direc = new vec2(1, 0).rotate(bulletTheta0 + BULLET_FORK_ARC*i);
 						let bullet = new Bullet(new vec2(CANNON_X, CANNON_Y).add(direc.mult(CANNON_BASE_RADIUS)),	// bullet materializes some dist away from cannon base, not directly atop cannon base's center
-												direc.mult(BULLET_SPEED), BULLET_RADIUS);
+												direc.mult(bulletSpeed), BULLET_RADIUS);
 						particleEngine.add_particle(bullet);
 					}
 					play_sound_from_file(spitSoundPath);
@@ -1935,23 +2208,16 @@ var game = {
 			// check for collisions btwn bullets and enemies
 			let bullets = particleEngine.particles.filter(p => p instanceof Bullet);
 			let enemies = particleEngine.particles.filter(p => p instanceof Enemy);
-			for(let b = 0 ; b < bullets.length; ++b)
+			for(let e = 0; e < enemies.length; ++e)
 			{
-				for(let e = 0; e < enemies.length; ++e)
+				for(let b = 0 ; b < bullets.length; ++b)
 				{
-					let b1 = bullets[b];
 					let e1 = enemies[e];
+					let b1 = bullets[b];
 					
 					if (are_circles_colliding(b1.pos, e1.pos, b1.vel, e1.vel, b1.radius, e1.radius))
 					{
 						b1.isActive = false;
-						e1.isActive = false;
-						
-						particleEngine.create_star_explosion(e1.pos);
-						play_sound_from_file(thudSoundPath);
-						
-						const COIN_RADIUS = 20;
-						particleEngine.add_particle(new Coin(e1.pos, COIN_RADIUS)); // drop coin
 						
 						// create smoke at bullet
 						const NUM_SMOKE_PUFFS = 4;
@@ -1974,9 +2240,23 @@ var game = {
 							let smokePuff = new SmokePuff(pos, new vec2(vx, vy), smokePuffRadius, rgbColorStr, lifeTime);
 							particleEngine.add_particle(smokePuff);
 						}
-						
 						bullets = bullets.slice(0, b).concat(bullets.slice(b+1));
-						enemies = enemies.slice(0, e).concat(enemies.slice(e+1));
+						play_sound_from_file(tapSoundPath);
+						
+						// damage dealt to enemy
+						e1.take_damage(bulletAtkPower);
+						if (e1.health <= 0.0)
+						{
+							e1.isActive = false;
+							
+							particleEngine.create_star_explosion(e1.pos);
+							play_sound_from_file(thudSoundPath);
+							
+							const COIN_RADIUS = 20;
+							particleEngine.add_particle(new Coin(e1.pos, COIN_RADIUS)); // drop coin
+							enemies = enemies.slice(0, e).concat(enemies.slice(e+1));
+						}
+						
 						break;	// skip to next bullet
 					}
 				}
@@ -2025,6 +2305,33 @@ var game = {
 					++nCoins;
 				}
 			});
+			
+			// check for level completion
+			if (levelCompleteFrame == undefined)
+			{
+				if (nextEnemySpawnIndex >= enemySpawnTimelines[currLevel].length && !particleEngine.particles.some(p => p instanceof Enemy))
+				{
+					levelCompleteFrame = frame;
+				}
+			}
+			else	// check if it's time to transition to upgrade screen
+			{
+				const LEVEL_COMPLETE_WAIT_DURATION = 240;
+				if (frame >= levelCompleteFrame + LEVEL_COMPLETE_WAIT_DURATION)
+				{
+					if (currLevel == enemySpawnTimelines.length - 1)
+					{
+						this.reset_game();
+						return;
+					}
+					else
+					{
+						this.level_complete_open_upgrade_screen();
+					}
+				}
+			}
+			
+			particleEngine.update();	// kill dead particles/bullets/enemies/coins/etc.
 			
 			// camera zoom/pan decay
 			camera.update();
@@ -2116,15 +2423,29 @@ var game = {
 			ctx.stroke();
 			ctx.fill();
 			
+			activeButtons.forEach(bt => bt.render());
+			
 			// render number of coins on hand
 			this.render_coin_display();
 			
 			// render cannon health icons
-			camera.set_identity_matrix();
 			const CANNON_HEALTH_ICON_SPACING = 40;
 			for(let i = cannonHealth-1; i >= 0; --i)
 			{
 				apply_image(heartButt, CANNON_X - CANNON_BASE_RADIUS + i*CANNON_HEALTH_ICON_SPACING, CANNON_Y + CANNON_BASE_RADIUS*1.2)
+			}
+			
+			// render Level Complete text
+			if (levelCompleteFrame != undefined)
+			{
+				ctx.font = '66px Courier New';
+				ctx.fillStyle = '#FFFFFF';
+				ctx.fillText('LEVEL COMPLETE', 100, CANVAS_HEIGHT/2);
+				if (currLevel == enemySpawnTimelines.length - 1)
+				{
+					ctx.font = '26px Courier New';
+					ctx.fillText('ALL LEVELS COMPLETE, returning to title screen', 20, CANVAS_HEIGHT*3/4);
+				}
 			}
 			
 			if (gamePaused)
@@ -2155,10 +2476,17 @@ var game = {
 		}
 		else if (gameState == GAME_STATE_START || gameState == GAME_STATE_RESTART)
 		{
-			let titleText = gameState == GAME_STATE_START ? 'CLICK BUTTON TO BEGIN PLAYING' : 'GAME OVER, CLICK BUTTON TO RESTART';
 			ctx.font = "30px Courier New";
 			ctx.fillStyle = '#FFFFFFFF';
-			ctx.fillText(titleText, 50, 10);
+			if (gameState == GAME_STATE_START)
+			{
+				ctx.fillText('CLICK BUTTON TO BEGIN PLAYING', 50, 10);
+			}
+			else
+			{
+				ctx.fillText('GAME OVER, CLICK BUTTON TO RESTART', 50, 10);
+				ctx.fillText(`Your coin score: ${nCoinsFinalScore}`, 190, 110);
+			}
 			
 			// render active buttons
 			activeButtons.forEach(bt => bt.render());
@@ -2179,60 +2507,102 @@ var game = {
 		camera.set_transform_matrix();
 	},
 	
-	// go to (or return to) start screen and reload background grass
+	// go to (or return to) start screen (from any state) and reload background grass
 	reset_game: function(isGameOver = false)
 	{
+		if (birdAudio)
+		{
+			// game over screen; birdAudio already loadedbir
+			birdAudio.pause();
+			birdAudio.currentTime = 0;
+		}
+		
 		particleEngine.reset_engine();
 		activeButtons.splice(0);
 		nCannonBulletForks = 1;
-		nCoins = 0;
+		cannonReloadDuration = CANNON_INITIAL_RELOAD_FRAMES;
+		bulletSpeed = BULLET_INITIAL_SPEED;
 		lastCannonHurtFrame = -99999;
 		cannonHealth = 5;
 		cannonReloadFramesRemaining = 0;
-		gameState = isGameOver ? GAME_STATE_RESTART : GAME_STATE_START;
+		bulletAtkPower = BULLET_INITIAL_ATK_POWER;
 		camera.stop_shake();
 		camera.hard_reset_camera();
+		currLevel = -1;
+		nextEnemySpawnIndex = 0;
+		
+		if (isGameOver)
+		{
+			gameState = GAME_STATE_RESTART;
+			nCoinsFinalScore = nCoins;
+		}
+		else
+		{
+			gameState = GAME_STATE_START;
+		}
+		nCoins = 0;
 		
 		activeButtons.push(new StartGameButton());
-		
-		// load grass blades
-		const MIN_OMEGA = 0.02;
-		const MAX_OMEGA = 0.05;
-		const MIN_BLADE_LEN = 18;
-		const MAX_BLADE_LEN = 38;
-		const MIN_AMPLITUDE = Math.PI/14;
-		const MAX_AMPLITUDE = Math.PI/10;
-		const MIN_EQUILIB_THETA = Math.PI*4/3;
-		const MAX_EQUILIB_THETA = Math.PI*5/3;
-		const NUM_GRASS_CLUMPS = 200;
-		const MIN_NUM_BLADES_PER_CLUMP = 3;
-		const MAX_NUM_BLADES_PER_CLUMP = 3;
-		const MAX_CLUMP_DIST_OFFSET = 14.56;
-		for(let i = 0; i < NUM_GRASS_CLUMPS; ++i)
-		{
-			let numBlades = Math.floor(lerp(MIN_NUM_BLADES_PER_CLUMP, MAX_NUM_BLADES_PER_CLUMP+1, Math.random()));
-			let clumpRootPos = new vec2( lerp(0, CANVAS_WIDTH, Math.random()), lerp(0, CANVAS_HEIGHT, Math.random()) );
-			for(let j = 0; j < numBlades; ++j)
-			{
-				let omega = lerp(MIN_OMEGA, MAX_OMEGA, Math.random());
-				let bladeRootPos = clumpRootPos.add(new vec2(MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1), MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1)));	// grass blades nearby but not bullseye-ing clump's root
-				let bladeLen = lerp(MIN_BLADE_LEN, MAX_BLADE_LEN, Math.random());
-				let theta0 = Math.random()*2*Math.PI;
-				let amplitude = lerp(MIN_AMPLITUDE, MAX_AMPLITUDE, Math.random());
-				let equilibTheta = lerp(MIN_EQUILIB_THETA, MAX_EQUILIB_THETA, Math.random());
-				let color = `hsl(${lerp(88, 132, Math.random())}, 100%, ${rnd_btwn(20, 35)}%, 100%)`;
-				let grassBlade = new GrassBlade(bladeRootPos, bladeLen, theta0, omega, amplitude, equilibTheta, color);
-				particleEngine.add_particle(grassBlade);
-			}
-		}
 	},
 	
-	start_playing_game: function()
+	// should only be called to go from gameState==playing to gameState==upgrade
+	level_complete_open_upgrade_screen: function()
 	{
-		gameState = GAME_STATE_PLAYING;
-		activeButtons.splice(0);	// delete [startPlayingGame] button
+		set_music_pause_play(MUSIC_PAUSE);
+		activeButtons.splice(0);	// delete all existing buttons
 		activeButtons.push(new UpgradeForksButton());
 		activeButtons.push(new UpgradeReloadButton());
+		activeButtons.push(new UpgradeShotSpeedButton());
+		activeButtons.push(new UpgradeBulletAtkPowerButton());
+		activeButtons.push(new FinishedUpgradesButton());
+		particleEngine.reset_engine();
+		gameState = GAME_STATE_UPGRADE;
+	},
+	
+	// should only be called when gameState==start or gameState==restart or gameState==upgrade
+	play_next_level: function()
+	{
+		if (birdAudio.isLoaded)
+		{
+			// load grass blades
+			const MIN_OMEGA = 0.02;
+			const MAX_OMEGA = 0.05;
+			const MIN_BLADE_LEN = 18;
+			const MAX_BLADE_LEN = 38;
+			const MIN_AMPLITUDE = Math.PI/14;
+			const MAX_AMPLITUDE = Math.PI/10;
+			const MIN_EQUILIB_THETA = Math.PI*4/3;
+			const MAX_EQUILIB_THETA = Math.PI*5/3;
+			const NUM_GRASS_CLUMPS = 200;
+			const MIN_NUM_BLADES_PER_CLUMP = 3;
+			const MAX_NUM_BLADES_PER_CLUMP = 3;
+			const MAX_CLUMP_DIST_OFFSET = 14.56;
+			for(let i = 0; i < NUM_GRASS_CLUMPS; ++i)
+			{
+				let numBlades = Math.floor(lerp(MIN_NUM_BLADES_PER_CLUMP, MAX_NUM_BLADES_PER_CLUMP+1, Math.random()));
+				let clumpRootPos = new vec2( lerp(0, CANVAS_WIDTH, Math.random()), lerp(0, CANVAS_HEIGHT, Math.random()) );
+				for(let j = 0; j < numBlades; ++j)
+				{
+					let omega = lerp(MIN_OMEGA, MAX_OMEGA, Math.random());
+					let bladeRootPos = clumpRootPos.add(new vec2(MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1), MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1)));	// grass blades nearby but not bullseye-ing clump's root
+					let bladeLen = lerp(MIN_BLADE_LEN, MAX_BLADE_LEN, Math.random());
+					let theta0 = Math.random()*2*Math.PI;
+					let amplitude = lerp(MIN_AMPLITUDE, MAX_AMPLITUDE, Math.random());
+					let equilibTheta = lerp(MIN_EQUILIB_THETA, MAX_EQUILIB_THETA, Math.random());
+					let color = `hsl(${lerp(88, 132, Math.random())}, 100%, ${rnd_btwn(20, 35)}%, 100%)`;
+					let grassBlade = new GrassBlade(bladeRootPos, bladeLen, theta0, omega, amplitude, equilibTheta, color);
+					particleEngine.add_particle(grassBlade);
+				}
+			}
+		
+			set_music_pause_play(MUSIC_PLAY);
+			activeButtons.splice(0);	// delete all existing buttons
+			++currLevel;
+			nextEnemySpawnIndex = 0;
+			levelCompleteFrame = undefined;
+			gameState = GAME_STATE_PLAYING;
+			levelStartFrame = frame;
+		}
 	},
 	
 	render_pause_overlay: function()
