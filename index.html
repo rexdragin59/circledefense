@@ -7,8 +7,8 @@
 </head>
 <body onload = "startGame()">
 <div>
-	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
-	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins, press (u) to toggle between upgrade and playing gameStates, pause (p) to mute music</p>
+	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause and also toggle music mute, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
+	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins</p>
 	<div id="fpsDisplay" style="user-select: none">FPS:</div>
 	<p>
 		<canvas id="myCanvas" width="600" height="480" style="border: 2px solid black;"></canvas>
@@ -101,6 +101,11 @@ vec2.is_same_loc = function(v1, v2)
 {
 	// hopefully more robust against floating point error than [(v1-v2).len_sq() == 0]
 	return v1.subtract(v2).len_sq() < MIN_VEC_LEN*MIN_VEC_LEN;
+}
+
+vec2.prototype.is_zero = function()
+{
+	return vec2.is_same_loc(this, new vec2(0, 0));
 }
 
 // returns new vec2 equal to *this* vec2 rotate theta radians about origin
@@ -557,6 +562,57 @@ Polygon.create_polygon_from_rect = function(rect)
 						new vec2(rect.x, rect.y+rect.h)]);
 }
 
+// returns boolean whether *this* and arg Polygon are intersecting
+// assumes *this* and arg poly are convex polygons
+Polygon.prototype.is_intersecting_convex_polygon = function(poly)
+{
+	return this.vertices.map((v, i) => {
+		let i1 = (i+1) % this.vertices.length;
+		let axis = v.subtract(this.vertices[i1]).rotate(Math.PI/2);
+		return axis;
+	}).concat(
+		poly.vertices.map((v, i) => {
+			let i1 = (i+1) % poly.vertices.length;
+			let axis = v.subtract(poly.vertices[i1]).rotate(Math.PI/2);
+			return axis;
+		})
+	).filter(v => !v.is_zero()).every(axis => {
+		let dpSelf = this.vertices.map(v => vec2.dot(v, axis));
+		let dpPoly = poly.vertices.map(v => vec2.dot(v, axis));
+		let minSelf = Math.min.apply(undefined, dpSelf);
+		let maxSelf = Math.max.apply(undefined, dpSelf);
+		let minPoly = Math.min.apply(undefined, dpPoly);
+		let maxPoly = Math.max.apply(undefined, dpPoly);
+		return minSelf <= maxPoly && minPoly <= maxSelf;
+	});
+}
+
+// assumes *this* is convex polygon
+// returns boolean whether *this* and arg ConvexPolygon are intersecting
+// assumes circleRadius > 0
+Polygon.prototype.is_intersecting_circle = function(circleCenter, circleRadius)
+{
+	let circleAxis = this.vertices.map(v => {
+		let deltaV = v.subtract(circleCenter);
+		return {v: deltaV, distSq: deltaV.len_sq()};
+	}).reduce((minDistVecObj, vObj) => minDistVecObj.distSq < vObj.distSq ? minDistVecObj : vObj).v;	// axis connecting circle center and [closest point on this polygon to circle center]
+	
+	return this.vertices.map((v, i) => {
+		let i1 = (i+1) % this.vertices.length;
+		let axis = v.subtract(this.vertices[i1]).rotate(Math.PI/2);
+		return axis;
+	}).concat(circleAxis).filter(v => !v.is_zero()).every(axis => {
+		axis = axis.normalize();
+		let dpSelf = this.vertices.map(v => vec2.dot(v, axis));
+		let dpCirc = [1, -1].map(sign => vec2.dot( circleCenter.add( axis.mult(circleRadius*sign) ), axis ) );
+		let minSelf = Math.min.apply(undefined, dpSelf);
+		let maxSelf = Math.max.apply(undefined, dpSelf);
+		let minCirc = Math.min.apply(undefined, dpCirc);
+		let maxCirc = Math.max.apply(undefined, dpCirc);
+		return minSelf <= maxCirc && minCirc <= maxSelf;
+	});
+}
+
 function* gen_id(startIndex = 0, prefix = undefined)
 {
 	for(let i = startIndex; true; ++i)
@@ -743,6 +799,32 @@ ParticleEngine.prototype.create_star_explosion = function(pos)
 	}
 }
 
+// arg is vec2
+ParticleEngine.prototype.create_smoke_puffs = function(pos)
+{
+	// create smoke at bullet
+	const NUM_SMOKE_PUFFS = 3;
+	const MAX_SMOKE_PUFF_SPEED = 0.11;
+	const MIN_SMOKE_PUFF_RADIUS = 6;
+	const MAX_SMOKE_PUFF_RADIUS = 15;
+	const MAX_SMOKE_PUFF_OFFSET = 5;
+	const MIN_LIFETIME = 50;
+	const MAX_LIFETIME = 70;
+	for(let i = 0; i < NUM_SMOKE_PUFFS; ++i)
+	{
+		let dx = MAX_SMOKE_PUFF_OFFSET*(Math.random()*2 - 1);
+		let dy = MAX_SMOKE_PUFF_OFFSET*(Math.random()*2 - 1);
+		let vx = MAX_SMOKE_PUFF_SPEED*(Math.random()*2 - 1);
+		let vy = MAX_SMOKE_PUFF_SPEED*(Math.random()*2 - 1);
+		let smokePuffRadius = rnd_btwn(MIN_SMOKE_PUFF_RADIUS, MAX_SMOKE_PUFF_RADIUS);
+		let rgbColorStr = `#${Math.floor(rnd_btwn(99, 241)).toString(16).padStart(2, '0').repeat(3)}`;
+		let lifeTime = rnd_btwn(MIN_LIFETIME, MAX_LIFETIME);
+		let pos1 = pos.add(new vec2(dx, dy));
+		let smokePuff = new SmokePuff(pos1, new vec2(vx, vy), smokePuffRadius, rgbColorStr, lifeTime);
+		this.add_particle(smokePuff);
+	}
+}
+
 const NUM_FRAMES_PER_FPS_UPDATE = 20;
 let prevFrameTime = 0;
 let gamePaused = false;
@@ -843,24 +925,32 @@ MovingParticle.prototype.update = function()
 
 // constructor
 // generic enemy class that specific enemies can subclass
-function Enemy(pos, vel, radius, health)
+function Enemy(pos, vel, radius)
 {
-	MovingParticle.call(this, pos, vel, radius, health);
-	this.health = health;	// MovingParticle.is_dead() is still the preferred way to signal that an Enemy is dead
+	MovingParticle.call(this, pos, vel, radius);
 }
 Enemy.prototype = Object.create(MovingParticle.prototype);
 
+// check for collision between moving circle and *this* Enemy
+// returns boolean whether arg bullet has collided with *this* enemy
 // can override this virtual function to apply visual effects like flashing white/red to indicate damage taken
-Enemy.prototype.take_damage = function(atk)
+// can also override this virtual function to deal damage to enemy health
+Enemy.prototype.is_colliding_with_moving_circle = function(movingParticle)
 {
-	this.health -= atk;
+	return are_circles_colliding(movingParticle.pos, this.pos, movingParticle.vel, this.vel, movingParticle.radius, this.radius);
 }
 
+// handle response to colliding with bullet/cannon
+// default is one-hit-KO
+Enemy.prototype.take_damage = function(atkPower)
+{
+	this.isActive = false;
+}
 
 // constructor
-function EnemyCrab(pos, vel, radius, health)
+function EnemyCrab(pos, vel, radius)
 {
-	Enemy.call(this, pos, vel, radius, health);
+	Enemy.call(this, pos, vel, radius);
 	this.startAnimFrame = -99999;	// frame that crab claw pinching animation started
 }
 EnemyCrab.prototype = Object.create(Enemy.prototype);
@@ -875,7 +965,6 @@ EnemyCrab.create_random_crab = function()
 	const MIN_ENEMY_Y = 130;
 	const MAX_ENEMY_Y = 230;
 	const MAX_TARGET_OFFSET = 25;
-	const CRAB_HEALTH = 0.9;
 	let radius = Math.random()*(MAX_ENEMY_RADIUS-MIN_ENEMY_RADIUS)+MIN_ENEMY_RADIUS;
 	let x = Math.random() < 0.5 ? -radius+1 : CANVAS_WIDTH+radius-1;	// barely onscreen to avoid being deleted immediately
 	let y = rnd_btwn(MIN_ENEMY_Y, MAX_ENEMY_Y);
@@ -883,7 +972,7 @@ EnemyCrab.create_random_crab = function()
 	let targetPos = new vec2(CANNON_X + MAX_TARGET_OFFSET*(Math.random()*2-1), CANNON_Y + MAX_TARGET_OFFSET*(Math.random()*2-1));
 	let speed = (MAX_ENEMY_SPEED - MIN_ENEMY_SPEED)*Math.random() + MIN_ENEMY_SPEED;
 	let vel = targetPos.subtract(pos).normalize().mult(speed);
-	return new EnemyCrab(pos, vel, radius, CRAB_HEALTH);
+	return new EnemyCrab(pos, vel, radius);
 }
 
 const TOTAL_ANIM_FRAMES = 20;
@@ -957,13 +1046,14 @@ const FROG_JUMP_PERIOD = 120;
 const FROG_JUMP_ARC_DURATION = 90;
 function EnemyFrog(pos, jumpDisplacement, radius, health)
 {
-	Enemy.call(this, pos, new vec2(0, 0), radius, health);
+	Enemy.call(this, pos, new vec2(0, 0), radius);
 	this.jumpDisplacement = jumpDisplacement;	// vec2 in world coords that frog moves each time it jumps
 	this.lastGroundPos = pos.clone();	// position where frog last touched ground, in world coords
 	this.isJumping = false;
 	this.lastJumpFrame = frame + FROG_JUMP_PERIOD;
 	this.groundPos = pos.clone();	// current position projected onto the ground
 	this.nHurtFramesRemaining = 0;	// number of frames that this frog will be flashing white
+	this.health = health;
 }
 EnemyFrog.prototype = Object.create(Enemy.prototype);
 
@@ -988,11 +1078,7 @@ EnemyFrog.create_random_frog = function()
 // [still onscreen?] using groundPos
 EnemyFrog.prototype.is_dead = function()
 {
-	return !this.isActive ||
-		   this.groundPos.x < -this.radius ||
-		   this.groundPos.x > CANVAS_WIDTH + this.radius ||
-		   this.groundPos.y < -this.radius ||
-		   this.groundPos.y > CANVAS_HEIGHT + this.radius;
+	return this.health <= 0.0 || !this.isActive;	// ignore in-bounds calculation, since frog frequently jumps out of bounds
 }
 
 EnemyFrog.prototype.get_y_priority = function()
@@ -1000,10 +1086,10 @@ EnemyFrog.prototype.get_y_priority = function()
 	return this.groundPos.y + (417-263.2)/282*this.radius;	// y-position at bottom of feet
 }
 
-EnemyFrog.prototype.take_damage = function(atk)
+EnemyFrog.prototype.take_damage = function(atkPower)
 {
 	const HURT_FLASH_DURATION = 6;
-	this.health -= atk;
+	this.health -= bulletAtkPower;
 	this.nHurtFramesRemaining = HURT_FLASH_DURATION;
 }
 
@@ -1078,6 +1164,409 @@ EnemyFrog.prototype.render = function()
 		let img = this.nHurtFramesRemaining > 0 ? frogHurtStand : frogStand;
 		draw_image_align_line_segs(img, frogPic0, frogStandDst0, frogPic1, frogStandDst1);
 	}
+}
+
+// constructor
+function Constraint()
+{
+	// nothing
+}
+
+// updates endpoint locations
+Constraint.prototype.apply_constraint = function()
+{
+	throw new Error('must override pure virtual method apply_constraint()');
+}
+
+// constructor
+// vecContainer is {v: <vec2>} object to simulate C++ pointers
+// keeps [endpoints v0 and v1] a fixed distance desiredLen away from each other
+function ConstraintStick(vecContainer0, vecContainer1, desiredLen, colorStr)
+{
+	this.vc0 = vecContainer0;
+	this.vc1 = vecContainer1;
+	this.desiredLen = desiredLen;
+	this.colorStr = colorStr;
+}
+ConstraintStick.prototype = Object.create(Constraint.prototype);
+
+ConstraintStick.prototype.apply_constraint = function()
+{
+	if (vec2.is_same_loc(this.vc0.v, this.vc1.v))
+	{
+		this.vc1.v.x += 0.00001;	// avoid division by zero when normalizing
+	}
+	let mid = this.vc1.v.add(this.vc0.v).mult(0.5);
+	this.vc0.v = mid.add( this.vc0.v.subtract(this.vc1.v).normalize().mult(this.desiredLen/2) );
+	this.vc1.v = mid.add( this.vc1.v.subtract(this.vc0.v).normalize().mult(this.desiredLen/2) );
+}
+
+// constructor
+// snaps vector to fixedPoint
+function ConstraintFixedPoint(vecContainer, fixedPoint)
+{
+	this.vc = vecContainer;
+	this.fixedPoint = fixedPoint;
+}
+ConstraintFixedPoint.prototype = Object.create(Constraint.prototype);
+
+ConstraintFixedPoint.prototype.apply_constraint = function()
+{
+	this.vc.v = this.fixedPoint.clone();
+}
+
+// constructor
+function EnemySnake(pos, direc, ropeSegLen)
+{
+	Enemy.call(this, pos, direc, 0.0);
+	this.constraints = [];	// Array of (subclasses of) Constraints
+	this.ropeSegLen = ropeSegLen;
+
+	//	set up body vertices
+	const NUM_VERTICES = EnemySnake.SNAKE_MESH_WIDTH * EnemySnake.SNAKE_MESH_HEIGHT;
+	this.bodyVertices = new Array(NUM_VERTICES).fill(0).map( (v, i) => ({ v: new vec2(100, 100) }) );	// Array of {v: <current vec2 position of vertices>}, for animation
+	this.prevVertices = this.bodyVertices.map(vc => vc.v);	// Array of vec2, for verlet integration
+	// this.bodyVertices[i].v corresponds to this.prevVertices[i].v for all valid i
+
+	// set up body constraints
+	for(let y = 0; y < EnemySnake.SNAKE_MESH_HEIGHT; ++y)
+	{
+		for(let x = 0; x < EnemySnake.SNAKE_MESH_WIDTH; ++x)
+		{
+			let i = y*EnemySnake.SNAKE_MESH_WIDTH + x;
+			let hasRightVertex = x < EnemySnake.SNAKE_MESH_WIDTH-1;
+			let hasLeftVertex = x > 0;
+			let hasLowerVertex = y < EnemySnake.SNAKE_MESH_HEIGHT-1;
+			let hasLower2Vertex = y < EnemySnake.SNAKE_MESH_HEIGHT-2;
+			if (hasRightVertex)
+			{
+				let j = i + 1;	// rightward
+				this.constraints.push( new ConstraintStick( this.bodyVertices[i], this.bodyVertices[j], lerp(this.ropeSegLen, 0, y/EnemySnake.SNAKE_MESH_HEIGHT), 'yellow' ) );
+			}
+			if (hasLowerVertex)
+			{
+				let k = i + EnemySnake.SNAKE_MESH_WIDTH;	// downward
+				this.constraints.push( new ConstraintStick( this.bodyVertices[i], this.bodyVertices[k], lerp(this.ropeSegLen, 0, y/EnemySnake.SNAKE_MESH_HEIGHT), 'yellow' ) );
+			}
+			if (hasRightVertex && hasLowerVertex)
+			{
+				let k1 = (y+1)*EnemySnake.SNAKE_MESH_WIDTH + 1;	// down diagonal
+				this.constraints.push( new ConstraintStick( this.bodyVertices[i], this.bodyVertices[k1], lerp(this.ropeSegLen, 0, y/EnemySnake.SNAKE_MESH_HEIGHT), 'yellow' ) );
+			}
+			if (hasLeftVertex && hasLowerVertex)
+			{
+				let k0 = (y+1)*EnemySnake.SNAKE_MESH_WIDTH + (x-1);
+				this.constraints.push( new ConstraintStick( this.bodyVertices[i], this.bodyVertices[k0], lerp(this.ropeSegLen*Math.sqrt(3), 0, y/EnemySnake.SNAKE_MESH_HEIGHT), 'red' ) );
+			}
+			if (hasRightVertex && hasLower2Vertex)
+			{
+				// keep adjacent equilateral triangles from inverting parity
+				let k2 = (y+2)*EnemySnake.SNAKE_MESH_WIDTH + x+1;
+				this.constraints.push( new ConstraintStick( this.bodyVertices[i], this.bodyVertices[k2], lerp(this.ropeSegLen*Math.sqrt(3), 0, y/EnemySnake.SNAKE_MESH_HEIGHT), 'red' ) );
+			}
+		}
+	}
+	this.neckLeftConstraint = new ConstraintFixedPoint(this.bodyVertices[0], new vec2(0, 0));	// fixed point constraint
+	this.constraints.push(this.neckLeftConstraint);
+	this.neckRightConstraint = new ConstraintFixedPoint(this.bodyVertices[1], new vec2(0, 0));
+	this.constraints.push(this.neckRightConstraint);
+	this.headPos = new vec2(0, 0);	// head position including oscillation
+	this.headVel = new vec2(0, 0);	// for pre-update collision calculation ONLY, not for updating position
+	
+	if (direc.is_zero())
+	{
+		throw new Error('cannot initialize EnemySnake using zero direction vector');
+	}
+	this.headDirec = direc;	// most recent nonzero normalized head direction
+	const SNAKE_HEALTH = 3.5;
+	this.health = SNAKE_HEALTH;
+	
+	const SNAKE_INITIAL_NUM_WAYPOINTS = 3;
+	this.nWayPointsRemaining = SNAKE_INITIAL_NUM_WAYPOINTS;
+	this.waypoint = this.get_next_waypoint();	// vec2
+}
+
+EnemySnake.prototype = Object.create(Enemy.prototype);
+EnemySnake.SNAKE_MESH_WIDTH = 2;
+EnemySnake.SNAKE_MESH_HEIGHT = 20;
+EnemySnake.NOSE_LEN_RATIO = 1.5;
+
+EnemySnake.create_random_snake = function()
+{
+	const SNAKE_ROPE_LEN = 15;
+	if (Math.random() < 0.5)
+	{
+		return new EnemySnake(new vec2(CANVAS_WIDTH, CANVAS_HEIGHT*2/9), new vec2(-1, 0), SNAKE_ROPE_LEN);
+	}
+	else
+	{
+		return new EnemySnake(new vec2(0, CANVAS_HEIGHT/8), new vec2(1, 0), SNAKE_ROPE_LEN);
+	}
+}
+
+// returns vec2
+EnemySnake.prototype.get_next_waypoint = function()
+{
+	if (this.nWayPointsRemaining <= 0)
+	{
+		return new vec2(CANNON_X, CANNON_Y);
+	}
+	
+	const NUM_ATTEMPTS = 100;
+	const MIN_DIST_AWAY = Math.max(CANVAS_WIDTH, CANVAS_HEIGHT)/2;
+	for(let i = 0; i < NUM_ATTEMPTS; ++i)
+	{
+		let waypoint = new vec2(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT*3/9);
+		if (waypoint.subtract(this.pos).len_sq() >= MIN_DIST_AWAY*MIN_DIST_AWAY)
+		{
+			return waypoint;
+		}
+	}
+	throw new Error('failed to generate snake waypoint');
+}
+
+EnemySnake.prototype.take_damage = function(atkPower)
+{
+	const HURT_FLASH_DURATION = 6;
+	this.health -= bulletAtkPower;
+	this.nHurtFramesRemaining = HURT_FLASH_DURATION;
+}
+
+EnemySnake.prototype.is_dead = function()
+{
+	return !this.isActive || this.health <= 0.0;
+}
+
+EnemySnake.prototype.get_y_priority = function()
+{
+	return this.pos.y;
+}
+
+EnemySnake.prototype.is_colliding_with_moving_circle = function(movingCircle)
+{
+	let headRadius = this.ropeSegLen*EnemySnake.NOSE_LEN_RATIO/2;
+	let headCenter = this.headPos.add(this.headDirec.mult(headRadius));
+	if (are_circles_colliding(headCenter, movingCircle.pos, this.headVel, movingCircle.vel, headRadius, movingCircle.radius) )
+	{
+		return true;
+	}
+	
+	// check collision against snake triangles
+	for(let y = 0; y < EnemySnake.SNAKE_MESH_HEIGHT-1; ++y)
+	{
+		// assume triangle doesn't change shape or rotate and has const velocity throughout timestep, for purposes of bullet collision
+		let v0 = this.bodyVertices[y*EnemySnake.SNAKE_MESH_WIDTH].v;
+		let v1 = this.bodyVertices[y*EnemySnake.SNAKE_MESH_WIDTH+1].v;
+		let v2 = this.bodyVertices[(y+1)*EnemySnake.SNAKE_MESH_WIDTH].v;
+		let v3 = this.bodyVertices[(y+1)*EnemySnake.SNAKE_MESH_WIDTH+1].v;
+		let velA = v0.subtract(this.prevVertices[y])
+			  .add(v1).subtract(this.prevVertices[y+1])
+			  .add(v3).subtract(this.prevVertices[y+EnemySnake.SNAKE_MESH_WIDTH])
+			  .mult(1/3);	// average of triangle vertices' velocities
+	    let velB = v0.subtract(this.prevVertices[y+1])
+			  .add(v2).subtract(this.prevVertices[y+EnemySnake.SNAKE_MESH_WIDTH])
+			  .add(v3).subtract(this.prevVertices[y+EnemySnake.SNAKE_MESH_WIDTH+1])
+			  .mult(1/3);	// average of triangle vertices' velocities
+		let vRelA = movingCircle.vel.subtract(velA);  // velocity of moving circle relative to this triangle
+		let vRelB = movingCircle.vel.subtract(velB);
+		
+		// test triangles again startCircle, endCircle, and sweptRectangle
+		if (new Polygon([v0, v1, v3]).is_intersecting_circle(movingCircle.pos, movingCircle.radius) ||
+			new Polygon([v0, v2, v3]).is_intersecting_circle(movingCircle.pos, movingCircle.radius) )
+		{
+			return true;
+		}
+		
+		if (!movingCircle.vel.is_zero())
+		{
+			if (new Polygon([v0, v1, v3]).is_intersecting_circle(movingCircle.pos.add(movingCircle.vel), movingCircle.radius) ||
+				new Polygon([v0, v2, v3]).is_intersecting_circle(movingCircle.pos.add(movingCircle.vel), movingCircle.radius) )
+			{
+				return true;
+			}
+			
+			let perp = movingCircle.vel.rotate(Math.PI/2).normalize().mult(movingCircle.radius);
+			let rectPoly = new Polygon([movingCircle.pos.add(perp),
+										movingCircle.pos.add(movingCircle.vel).add(perp),
+										movingCircle.pos.add(movingCircle.vel).subtract(perp),
+										movingCircle.pos.subtract(perp)]);
+			if (new Polygon([v0, v1, v3]).is_intersecting_convex_polygon(rectPoly) ||
+				new Polygon([v0, v2, v3]).is_intersecting_convex_polygon(rectPoly) )
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+console.log('todo spawn snakes from src string');
+console.log('todo test debug rendering of collision triangles of snake');
+console.log('todo implement collision between snake and cannon');
+
+EnemySnake.prototype.update = function()
+{
+	// compute next waypoint if needed
+	const WAYPOINT_RADIUS = 20.0;
+	if (are_circles_colliding(this.pos, this.waypoint, this.vel, new vec2(0, 0), 0.0, WAYPOINT_RADIUS))
+	{
+		--this.nWayPointsRemaining;
+		this.waypoint = this.get_next_waypoint();
+	}
+	
+	// move snake head
+	const SNAKE_MAX_SPEED = 3.3;
+	const SNAKE_ACCEL_FACTOR = 0.02;
+	let headAccel = this.waypoint.subtract(this.pos).normalize().mult(SNAKE_MAX_SPEED).subtract(this.vel).mult(SNAKE_ACCEL_FACTOR);
+	this.pos = this.pos.add(this.vel).add(headAccel.mult(0.5));
+	this.vel = this.vel.add(headAccel);
+	
+	// set neck constraints
+	const OSCILLATION_OMEGA = 0.124;
+	this.headDirec = vec2.is_same_loc(new vec2(0, 0), this.vel) ? this.headDirec : this.vel.normalize();
+	
+	const OSCILLATION_AMPLITUDE_VEC = this.headDirec.mult(this.ropeSegLen*2).rotate(Math.PI/2);
+	let headRL = this.headDirec.rotate(Math.PI/2 - Math.PI/6).mult(this.ropeSegLen);	// body is tilted at 30 degrees away from head direction by default, due to constraint geometry
+	this.headPos = this.pos.add( OSCILLATION_AMPLITUDE_VEC.mult(Math.sin(OSCILLATION_OMEGA*frame)) );
+	this.headVel = OSCILLATION_AMPLITUDE_VEC.mult(Math.cos(OSCILLATION_OMEGA*frame)*OSCILLATION_OMEGA).add(this.vel);
+	this.neckLeftConstraint .fixedPoint = this.headPos.add(headRL.mult(-0.5));
+	this.neckRightConstraint.fixedPoint = this.headPos.add(headRL.mult( 0.5));
+	
+	// run verlet integrator
+	let GRAVITY_MAG = 0.71;
+	let gravity = this.headDirec.mult(-GRAVITY_MAG);	// directional gravity makes tail swish in S-shape instead of flopping wildly
+	const FRICTION = 0.0009;	// fraction of velocity to take away every frame; prevents runaway energy
+	this.bodyVertices.forEach((vc, i) => {
+		let v = vc.v;
+		let posCopy = v;
+		let vel = v.subtract(this.prevVertices[i]);
+		let friction = vel.mult(-FRICTION*vel.len()**(1));	// faster objects slow down more than slower objects
+		if ( vel.len_sq() < friction.len_sq() && !vec2.is_same_loc(vel, new vec2(0, 0) ) )
+		{
+			// friction can never overpower velocity
+			friction = friction.normalize().mult(vel.len());
+		}
+		
+		let force = gravity.add( friction );
+		vc.v = v.mult(2).subtract(this.prevVertices[i]).add(force.mult(1*1));
+		this.prevVertices[i] = posCopy.clone();
+	});
+	
+	// gauss-seidel method of relaxation to converge to [solution that satisfies all constraints at the same time]
+	const NUM_CONSTRAINT_ITERATIONS = 5;	// forward once and backward once count as two iterations total
+	for(let i = 0; i < NUM_CONSTRAINT_ITERATIONS; ++i)
+	{
+		this.constraints.forEach(c => c.apply_constraint());
+	}
+	
+	if (this.nHurtFramesRemaining > 0)
+	{
+		--this.nHurtFramesRemaining;
+	}
+}
+
+const SNAKE_HEAD_PARAM = -1;
+EnemySnake.prototype.get_triangle_color = function(nTrianglesRendered)
+{
+	const SNAKE_COLOR_LIGHT = '#55EE44FF';
+	const SNAKE_COLOR_DARK = '#33AA22FF';
+	const SNAKE_COLOR_LIGHT_HURT = '#CCFFBBFF';
+	const SNAKE_COLOR_DARK_HURT = '#55CC66FF';
+	if (nTrianglesRendered == SNAKE_HEAD_PARAM)
+	{
+		return this.nHurtFramesRemaining > 0 ? SNAKE_COLOR_LIGHT_HURT : SNAKE_COLOR_LIGHT;
+	}
+	
+	if (this.nHurtFramesRemaining > 0)
+	{
+		return nTrianglesRendered % 3 == 1 ? SNAKE_COLOR_DARK_HURT : SNAKE_COLOR_LIGHT_HURT;
+	}
+	else
+	{
+		return nTrianglesRendered % 3 == 1 ? SNAKE_COLOR_DARK : SNAKE_COLOR_LIGHT;
+	}
+}
+
+EnemySnake.prototype.render = function()
+{
+	// render snake body
+	const SNAKE_COLOR_LIGHT = '#55EE44FF';
+	const SNAKE_COLOR_DARK = '#33AA22FF';
+	const SNAKE_COLOR_LIGHT_HURT = 'red';//'#AAFF99FF';
+	const SNAKE_COLOR_DARK_HURT = 'cyan';//'#AAFFAAFF';
+	let nTrianglesRendered = 0;
+	for(let y = 0; y < EnemySnake.SNAKE_MESH_HEIGHT-1; ++y)
+	{
+		for(let x = 0; x < EnemySnake.SNAKE_MESH_WIDTH-1; ++x)
+		{
+			let i = y*EnemySnake.SNAKE_MESH_WIDTH+x;
+			let i1 = y*EnemySnake.SNAKE_MESH_WIDTH+x+1;	// rightward
+			let j = (y+1)*EnemySnake.SNAKE_MESH_WIDTH + x;	// downward
+			let j1 = (y+1)*EnemySnake.SNAKE_MESH_WIDTH + x+1;	// downward rightward
+			
+			ctx.fillStyle = this.get_triangle_color(nTrianglesRendered);
+			ctx.beginPath();
+			ctx.moveTo(this.bodyVertices[i].v.x, this.bodyVertices[i].v.y);
+			ctx.lineTo(this.bodyVertices[i1].v.x, this.bodyVertices[i1].v.y);
+			ctx.lineTo(this.bodyVertices[j1].v.x, this.bodyVertices[j1].v.y);
+			ctx.fill();
+			++nTrianglesRendered;
+			
+			ctx.fillStyle = this.get_triangle_color(nTrianglesRendered);
+			ctx.beginPath();
+			ctx.moveTo(this.bodyVertices[i].v.x, this.bodyVertices[i].v.y);
+			ctx.lineTo(this.bodyVertices[j1].v.x, this.bodyVertices[j1].v.y);
+			ctx.lineTo(this.bodyVertices[j].v.x, this.bodyVertices[j].v.y);
+			ctx.fill();
+			++nTrianglesRendered;
+		}
+	}
+	
+	// render snake head
+	const noseLen = this.ropeSegLen*EnemySnake.NOSE_LEN_RATIO;
+	let neckRight = this.neckRightConstraint.fixedPoint;
+	let neckLeft = this.neckLeftConstraint.fixedPoint.subtract(neckRight).rotate(Math.PI/6).mult(Math.sqrt(3)/2).add(neckRight);
+	let mid = this.headPos.add( this.headDirec.mult(noseLen) );	// tip of nose
+	let leftDirec = this.headDirec.rotate(-Math.PI/2);
+	
+	let c1 = this.headPos.add(this.headDirec.mult(noseLen*0.5)).add(leftDirec.mult( this.ropeSegLen*0.5));
+	let c2 = this.headPos.add(this.headDirec.mult(noseLen    )).add(leftDirec.mult( this.ropeSegLen*0.4));
+	let c3 = this.headPos.add(this.headDirec.mult(noseLen    )).add(leftDirec.mult(-this.ropeSegLen*0.4));
+	let c4 = this.headPos.add(this.headDirec.mult(noseLen*0.5)).add(leftDirec.mult(-this.ropeSegLen*0.5));
+	
+	ctx.fillStyle = this.get_triangle_color(SNAKE_HEAD_PARAM);
+	ctx.beginPath();
+	ctx.moveTo(this.neckLeftConstraint.fixedPoint.x, this.neckLeftConstraint.fixedPoint.y);
+	ctx.lineTo(neckLeft.x, neckLeft.y);
+	ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, mid.x, mid.y);
+	ctx.bezierCurveTo(c3.x, c3.y, c4.x, c4.y, neckRight.x, neckRight.y);
+	ctx.fill();
+	
+	// render snake eyes
+	let eyeWhite1 = this.headPos.add(this.headDirec.mult(noseLen*0.8 )).add(leftDirec.mult( this.ropeSegLen*0.28));
+	let eyeWhite2 = this.headPos.add(this.headDirec.mult(noseLen*0.8 )).add(leftDirec.mult(-this.ropeSegLen*0.28));
+	let eyeBlack1 = this.headPos.add(this.headDirec.mult(noseLen*0.83)).add(leftDirec.mult( this.ropeSegLen*0.28));
+	let eyeBlack2 = this.headPos.add(this.headDirec.mult(noseLen*0.83)).add(leftDirec.mult(-this.ropeSegLen*0.28));
+	eyeWhite1.render_solid('white', this.ropeSegLen*0.21);
+	eyeWhite2.render_solid('white', this.ropeSegLen*0.21);
+	eyeBlack1.render_solid('black', this.ropeSegLen*0.15);
+	eyeBlack2.render_solid('black', this.ropeSegLen*0.15);
+	
+	// debug render stick constraints
+	this.constraints.filter(c => c instanceof ConstraintStick).forEach(c => {
+		//new LineSeg(c.vc0.v, c.vc1.v).render(c.colorStr);
+	});
+	
+	// debug render neck left
+	const START_VERTEX_COLOR = 'green';
+	//startPosConstraint.fixedPoint.render_solid(START_VERTEX_COLOR, VERTEX_RADIUS);
+	
+	// debug render neck right
+	const END_VERTEX_COLOR = 'red';
+	//endPosConstraint.fixedPoint.render_solid(END_VERTEX_COLOR, VERTEX_RADIUS);
+	
+	// debug render waypoint
+	const WAYPOINT_COLOR = 'yellow';
+	this.waypoint.render_ring(WAYPOINT_COLOR, 20);
 }
 
 // constructor
@@ -1893,7 +2382,199 @@ FinishedUpgradesButton.prototype.render = function()
 }
 
 let activeButtons = [];	// Array of (subclasses of) Button
-let enemySpawnTimelines;	// Array of [Array of {enemyStr: String denoting which enemy type, spawnFrame: frameNum} sorted from lowest .frameNum to highest .frameNum], one element for each level
+
+// returns valid enemySpawnTimelines
+// comments begin with '//' at the beginning of the line
+// values are comma-separated
+// blank lines and comments are ignored
+// Ends of levels must be on a single line and must be of the form 'LEVEL_*', where * is any string, or empty string is ok
+function parse_enemy_spawn_script(src)
+{
+	let timelines = [];
+	let currTimeline = [];
+	const LEVEL_TERMINATOR = 'LEVEL_';
+	
+	src.split('\n').map((line, lineNum) => {
+		if (line == '' || line.substring(0, 2) == '//')
+		{
+			return;	// ignore comments and blank lines
+		}
+		
+		if (line.substring(0, LEVEL_TERMINATOR.length) == LEVEL_TERMINATOR)
+		{
+			currTimeline.sort((a, b) => a.spawnFrame - b.spawnFrame);
+			timelines.push(currTimeline);
+			currTimeline = [];
+			
+		}
+		else
+		{
+			let words = line.split(',');
+			if (words.length == 0)
+			{
+				throw new Error(`line ${lineNum+1} has no entries after splitting by comma: ^${line}$`);
+			}
+			if (words[0] == 'crab')
+			{
+				if (words.length != 2)
+				{
+					throw new Error(`line ${lineNum+1} crab has invalid number of commas: ^${line}$`);
+				}
+				let spawnFrame = Number(words[1]);
+				if (words[1] == '' || isNaN(spawnFrame))
+				{
+					throw new Error(`line ${lineNum+1} invalid crab spawn time: ^${words[1]}$`);
+				}
+				currTimeline.push({enemyStr: 'crab', spawnFrame: spawnFrame});
+			}
+			else if (words[0] == 'frog')
+			{
+				if (words.length != 2)
+				{
+					throw new Error(`line ${lineNum+1} frog has invalid number of commas: ^${line}$`);
+				}
+				let spawnFrame = Number(words[1]);
+				if (words[1] == '' || isNaN(spawnFrame))
+				{
+					throw new Error(`line ${lineNum+1} invalid frog spawn time: ^${words[1]}$`);
+				}
+				currTimeline.push({enemyStr: 'frog', spawnFrame: spawnFrame});
+			}
+			else if (words[0] == 'snake')
+			{
+				if (words.length != 2)
+				{
+					throw new Error(`line ${lineNum+1} frog has invalid number of commas: ^${line}$`);
+				}
+				let spawnFrame = Number(words[1]);
+				if (words[1] == '' || isNaN(spawnFrame))
+				{
+					throw new Error(`line ${lineNum+1} invalid snake spawn time: ^${words[1]}$`);
+				}
+				currTimeline.push({enemyStr: 'snake', spawnFrame: spawnFrame});
+			}
+			else
+			{
+				throw new Error(`line ${lineNum+1} invalid creature: ^${words[0]}$`);
+			}
+		}
+		// go to next line
+	});
+	
+	if (currTimeline.length > 0)
+	{
+		throw new Error(`script does not end with \"${LEVEL_TERMINATOR}*\" terminator token!`);
+	}
+	
+	return timelines;
+}
+
+let enemySpawnSrc = `//
+snake,0
+crab,100
+crab,160
+crab,220
+crab,280
+crab,340
+crab,400
+crab,460
+crab,520
+crab,580
+crab,640
+LEVEL_end0
+
+crab,100
+crab,152
+frog,178
+crab,204
+crab,256
+crab,308
+crab,308
+crab,360
+crab,412
+crab,464
+crab,516
+frog,542
+crab,568
+LEVEL_end1
+
+crab,100
+crab,152
+crab,204
+crab,256
+crab,308
+crab,360
+crab,412
+crab,464
+crab,516
+crab,568
+crab,620
+crab,672
+crab,724
+crab,776
+crab,828
+crab,880
+crab,932
+crab,984
+crab,1036
+crab,1088
+crab,1140
+crab,1296
+frog,210
+frog,517
+frog,770
+frog,812
+frog,910
+frog,1120
+frog,1200
+LEVEL_end2
+
+frog,120
+frog,240
+frog,360
+frog,420
+frog,480
+frog,560
+frog,620
+frog,720
+frog,820
+frog,920
+frog,1020
+frog,1130
+frog,1140
+frog,1150
+frog,1160
+frog,1260
+frog,1360
+frog,1460
+frog,1560
+frog,1590
+crab,120
+crab,240
+crab,250
+crab,260
+crab,270
+crab,370
+crab,570
+crab,670
+crab,780
+crab,890
+crab,1000
+crab,1010
+crab,1120
+crab,1240
+crab,1250
+crab,1370
+crab,1470
+crab,1570
+crab,1670
+crab,1780
+crab,1890
+LEVEL_end3
+`;
+
+let enemySpawnTimelines = parse_enemy_spawn_script(enemySpawnSrc);	// Array of [Array of {enemyStr: String denoting which enemy type, spawnFrame: frameNum} sorted from lowest .frameNum to highest .frameNum], one element for each level
+
 let levelStartFrame = 0;
 let currLevel = -1;
 let nextEnemySpawnIndex = 0;
@@ -2061,73 +2742,6 @@ var game = {
 		// load resources
 		this.reset_game();
 		
-		// load enemy spawn timeline
-		enemySpawnTimelines = [];
-		let level0 = [];
-		level0.push({enemyStr: 'crab', spawnFrame: 60*0+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*1+100});
-		level0.push({enemyStr: 'frog', spawnFrame: 60*1.5+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*2+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*3+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*4+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*5+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*6+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*7+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*8+100});
-		level0.push({enemyStr: 'crab', spawnFrame: 60*9+100});
-		enemySpawnTimelines.push(level0);
-		
-		let level1 = [];
-		level1.push({enemyStr: 'crab', spawnFrame: 52*0+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*1+100});
-		level1.push({enemyStr: 'frog', spawnFrame: 52*1.5+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*2+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*3+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*4+100});
-		level1.push({enemyStr: 'frog', spawnFrame: 52*4.5+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*5+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*6+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*7+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*8+100});
-		level1.push({enemyStr: 'frog', spawnFrame: 52*8.5+100});
-		level1.push({enemyStr: 'crab', spawnFrame: 52*9+100});
-		enemySpawnTimelines.push(level1);
-		
-		let level2 = [];
-		level2.push({enemyStr: 'crab', spawnFrame: 48*0+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*1+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*1+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*2+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*3+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*3+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*4+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*5+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*5+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*6+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*7+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*7+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*8+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*9+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*9+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*10+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*11+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*12+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*13+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*14+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*15+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*16+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*17+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*18+100});
-		level2.push({enemyStr: 'crab', spawnFrame: 48*19+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*19+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*21+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*23+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*25+100});
-		level2.push({enemyStr: 'frog', spawnFrame: 48*27+100});
-		enemySpawnTimelines.push(level2);
-		
-		enemySpawnTimelines.forEach( timeline => timeline.sort((a, b) => a.spawnFrame - b.spawnFrame) );
-		
 		birdAudio = new Audio('birdSongs.mp3');
 		birdAudio.addEventListener('loadeddata', function(){
 			birdAudio.isLoaded = true;
@@ -2165,6 +2779,10 @@ var game = {
 						else if(spawn.enemyStr == 'frog')
 						{
 							particleEngine.add_particle(EnemyFrog.create_random_frog());
+						}
+						else if(spawn.enemyStr == 'snake')
+						{
+							particleEngine.add_particle(EnemySnake.create_random_snake());
 						}
 						else
 						{
@@ -2215,40 +2833,18 @@ var game = {
 					let e1 = enemies[e];
 					let b1 = bullets[b];
 					
-					if (are_circles_colliding(b1.pos, e1.pos, b1.vel, e1.vel, b1.radius, e1.radius))
+					if (e1.is_colliding_with_moving_circle(b1))
 					{
 						b1.isActive = false;
-						
-						// create smoke at bullet
-						const NUM_SMOKE_PUFFS = 4;
-						const MAX_SMOKE_PUFF_SPEED = 0.15;
-						const MIN_SMOKE_PUFF_RADIUS = 6;
-						const MAX_SMOKE_PUFF_RADIUS = 15;
-						const MAX_SMOKE_PUFF_OFFSET = 5;
-						const MIN_LIFETIME = 20;
-						const MAX_LIFETIME = 30;
-						for(let i = 0; i < NUM_SMOKE_PUFFS; ++i)
-						{
-							let dx = MAX_SMOKE_PUFF_OFFSET*(Math.random()*2 - 1);
-							let dy = MAX_SMOKE_PUFF_OFFSET*(Math.random()*2 - 1);
-							let vx = MAX_SMOKE_PUFF_SPEED*(Math.random()*2 - 1);
-							let vy = MAX_SMOKE_PUFF_SPEED*(Math.random()*2 - 1);
-							let smokePuffRadius = rnd_btwn(MIN_SMOKE_PUFF_RADIUS, MAX_SMOKE_PUFF_RADIUS);
-							let rgbColorStr = `#${Math.floor(rnd_btwn(99, 241)).toString(16).padStart(2, '0').repeat(3)}`;
-							let lifeTime = rnd_btwn(MIN_LIFETIME, MAX_LIFETIME);
-							let pos = get_circle_collision_loc(b1.pos, e1.pos, b1.radius, e1.radius).add(new vec2(dx, dy));
-							let smokePuff = new SmokePuff(pos, new vec2(vx, vy), smokePuffRadius, rgbColorStr, lifeTime);
-							particleEngine.add_particle(smokePuff);
-						}
+						particleEngine.create_smoke_puffs(get_circle_collision_loc(b1.pos, e1.pos, b1.radius, e1.radius));
 						bullets = bullets.slice(0, b).concat(bullets.slice(b+1));
 						play_sound_from_file(tapSoundPath);
 						
 						// damage dealt to enemy
 						e1.take_damage(bulletAtkPower);
-						if (e1.health <= 0.0)
+						if (e1.is_dead())
 						{
 							e1.isActive = false;
-							
 							particleEngine.create_star_explosion(e1.pos);
 							play_sound_from_file(thudSoundPath);
 							
@@ -2266,7 +2862,7 @@ var game = {
 			for(let e = 0; e < enemies.length; ++e)
 			{
 				let e1 = enemies[e];
-				if (are_circles_colliding(new vec2(CANNON_X, CANNON_Y), e1.pos, new vec2(0, 0), e1.vel, CANNON_BASE_RADIUS, e1.radius))
+				if ( e1.is_colliding_with_moving_circle( new MovingParticle(new vec2(CANNON_X, CANNON_Y), new vec2(0, 0), CANNON_BASE_RADIUS) ) )
 				{
 					// destroy enemy
 					particleEngine.create_star_explosion(e1.pos);
@@ -2435,6 +3031,15 @@ var game = {
 				apply_image(heartButt, CANNON_X - CANNON_BASE_RADIUS + i*CANNON_HEALTH_ICON_SPACING, CANNON_Y + CANNON_BASE_RADIUS*1.2)
 			}
 			
+			// render level start text
+			const LEVEL_START_WAIT_DURATION = 180;
+			if (frame - levelStartFrame < LEVEL_START_WAIT_DURATION)
+			{
+				ctx.font = '86px Courier New';
+				ctx.fillStyle = '#FFFFFF';
+				ctx.fillText(`LEVEL ${currLevel}`, 220, CANVAS_HEIGHT/2);
+			}
+			
 			// render Level Complete text
 			if (levelCompleteFrame != undefined)
 			{
@@ -2495,6 +3100,7 @@ var game = {
 		// render other things
 	},
 	
+	// renders at the same screen coords every time regardless of camera zoom/position
 	render_coin_display: function()
 	{
 		camera.set_identity_matrix();
@@ -2608,7 +3214,7 @@ var game = {
 	render_pause_overlay: function()
 	{
 		camera.set_identity_matrix();
-		const PAUSE_SCREEN_COLOR = '#00000090';
+		const PAUSE_SCREEN_COLOR = '#00000010';
 		ctx.fillStyle = PAUSE_SCREEN_COLOR;
 		ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 		
