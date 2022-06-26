@@ -3,21 +3,22 @@
 <head>
 	<title>Javascript game</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel = "icon" href = "minimalLogo.png" type = "image/x-icon">
+	<!--link rel = "icon" href = "minimalLogo.png" type = "image/x-icon"-->
+	<link rel = "icon" href = "https://rexdragin59.github.io/circledefense/minimalLogo.png" type = "image/x-icon">
 </head>
 <body onload = "startGame()">
 <div>
+	<canvas id="myCanvas" width="600" height="480" style="border: 2px solid black;"></canvas>
+	<p id="errorMarquee">Javascript did not compile</p>
+	<!-- error marquee is for debugging on mobile -->
 	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause and also toggle music mute, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
 	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins</p>
 	<div id="fpsDisplay" style="user-select: none">FPS:</div>
-	<p>
-		<canvas id="myCanvas" width="600" height="480" style="border: 2px solid black;"></canvas>
-	</p>
 </div>
 <script>
 
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 480;
+const CANVAS_WIDTH = Math.min(800, screen.width*13/14);	// mobile-friendly
+const CANVAS_HEIGHT = Math.min(480, screen.height*13/14);
 let canvas = undefined;
 let ctx = undefined;
 let xCanvas = undefined;
@@ -149,7 +150,7 @@ vec2.prototype.render_text = function(textStr, colorStr)
 // since console.log(Vertex) doesn't always display correct values
 vec2.prototype.toString = function()
 {
-	return '(('.concat(this.x, ', ', this.y, '); id=', (this.debugId ?? ''), ')');
+	return '(('.concat(this.x, ', ', this.y, '); id=', (this.debugId != undefined ? this.debugId : ''), ')');
 }
 
 // only renders debugId text; does NOT render vertex itself
@@ -222,7 +223,7 @@ LineSeg.prototype.render_saw = function(colorStr = '#000000FF', nPeriods = 10, a
 
 LineSeg.prototype.toString = function()
 {
-	return '( '.concat(this.r1.toString(), ' to ', this.r2.toString(), '; id=', (this.debugId ?? ''), ' )');
+	return '( '.concat(this.r1.toString(), ' to ', this.r2.toString(), '; id=', (this.debugId != undefined ? this.debugId : ''), ' )');
 }
 
 // lehmer linear congruential generator
@@ -293,7 +294,7 @@ function get_legend_offset(seedStr)
 // and render thin lineSeg connecting *this* vector and text location
 vec2.prototype.render_offset_legend_text = function(textStr, colorStr = '#000000FF', offsetVec = undefined)
 {
-	let v2 = this.add(offsetVec ?? new vec2(0, 0));
+	let v2 = this.add(offsetVec != undefined ? offseVec : new vec2(0, 0));
 	v2.render_text(textStr, colorStr);
 
 	const TEXT_LEGEND_LINE_WIDTH = 0.9;
@@ -617,7 +618,7 @@ function* gen_id(startIndex = 0, prefix = undefined)
 {
 	for(let i = startIndex; true; ++i)
 	{
-		yield (prefix ?? '').concat(i);
+		yield (prefix != undefined ? prefix : '').concat(i);
 	}
 }
 
@@ -1281,7 +1282,7 @@ function EnemySnake(pos, direc, ropeSegLen)
 	const SNAKE_HEALTH = 3.5;
 	this.health = SNAKE_HEALTH;
 	
-	const SNAKE_INITIAL_NUM_WAYPOINTS = 3;
+	const SNAKE_INITIAL_NUM_WAYPOINTS = 4;
 	this.nWayPointsRemaining = SNAKE_INITIAL_NUM_WAYPOINTS;
 	this.waypoint = this.get_next_waypoint();	// vec2
 }
@@ -1399,9 +1400,6 @@ EnemySnake.prototype.is_colliding_with_moving_circle = function(movingCircle)
 	}
 	return false;
 }
-console.log('todo spawn snakes from src string');
-console.log('todo test debug rendering of collision triangles of snake');
-console.log('todo implement collision between snake and cannon');
 
 EnemySnake.prototype.update = function()
 {
@@ -1566,7 +1564,7 @@ EnemySnake.prototype.render = function()
 	
 	// debug render waypoint
 	const WAYPOINT_COLOR = 'yellow';
-	this.waypoint.render_ring(WAYPOINT_COLOR, 20);
+	//this.waypoint.render_ring(WAYPOINT_COLOR, 20);
 }
 
 // constructor
@@ -1913,18 +1911,30 @@ const CANNON_HURT_DURATION = 120;	// flashing invincibility duration frames
 const CANNON_FLASH_PERIOD = 20.4;	// duration in frames
 let cannonHealth;	// number of hits that cannon can take before game over
 
-let crab = load_image('crabBitmap.png');
-let crabClawUpper = load_image('crab claw upper bitmap.png');
-let crabClawLower = load_image('crab claw lower bitmap.png');
-let crabClawWhole = load_image('crab claw whole bitmap.png');
-let frogStand = load_image('frogStand.png');
-let frogHurtStand = load_image('frogHurtStand.png');
-let frogJump = load_image('frogJump.png');
-let frogHurtJump = load_image('frogHurtJump.png');
-let frogStandShadow = load_image('frogStandShadow.png');
-let frogJumpShadow = load_image('frogJumpShadow.png');
-let coinSheet = load_image('coinSheet.png');
-let heartButt = load_image('heartButt.png');
+// let crab = load_image('crabBitmap.png');
+let crab = load_image('https://rexdragin59.github.io/circledefense/crabBitmap.png');
+// let crabClawUpper = load_image('crab claw upper bitmap.png');
+let crabClawUpper = load_image('https://rexdragin59.github.io/circledefense/crab claw upper bitmap.png');
+// let crabClawLower = load_image('crab claw lower bitmap.png');
+let crabClawLower = load_image('https://rexdragin59.github.io/circledefense/crab claw lower bitmap.png');
+// let crabClawWhole = load_image('crab claw whole bitmap.png');
+let crabClawWhole = load_image('https://rexdragin59.github.io/circledefense/crab claw whole bitmap.png');
+// let frogStand = load_image('frogStand.png');
+let frogStand = load_image('https://rexdragin59.github.io/circledefense/frogStand.png');
+// let frogHurtStand = load_image('frogHurtStand.png');
+let frogHurtStand = load_image('https://rexdragin59.github.io/circledefense/frogHurtStand.png');
+// let frogJump = load_image('frogJump.png');
+let frogJump = load_image('https://rexdragin59.github.io/circledefense/frogJump.png');
+// let frogHurtJump = load_image('frogHurtJump.png');
+let frogHurtJump = load_image('https://rexdragin59.github.io/circledefense/frogHurtJump.png');
+// let frogStandShadow = load_image('frogStandShadow.png');
+let frogStandShadow = load_image('https://rexdragin59.github.io/circledefense/frogStandShadow.png');
+// let frogJumpShadow = load_image('frogJumpShadow.png');
+let frogJumpShadow = load_image('https://rexdragin59.github.io/circledefense/frogJumpShadow.png');
+// let coinSheet = load_image('coinSheet.png');
+let coinSheet = load_image('https://rexdragin59.github.io/circledefense/coinSheet.png');
+// let heartButt = load_image('heartButt.png');
+let heartButt = load_image('https://rexdragin59.github.io/circledefense/heartButt.png');
 
 // draws arg img such that the lineSeg (pic0, pic1) treated as world coords, lines up exactly with [the lineSeg (dst0, dst1) in world coords]
 // reflects images about lineSeg iff boolean arg mustReflect is true
@@ -1985,23 +1995,39 @@ function play_sound_from_file(path)
 	});
 }
 
-let thudSoundPath = 'thud2.wav';
-load_sound_from_file(thudSoundPath);
-let snareSoundPath = 'snare.wav';
-load_sound_from_file(snareSoundPath);
-let spitSoundPath = 'spit.wav';
-load_sound_from_file(spitSoundPath);
-let coinSoundPath = 'coinClink.wav';
-load_sound_from_file(coinSoundPath);
-let birdAudio;
-let tapSoundPath = 'tap.wav';
-load_sound_from_file(tapSoundPath);
+// let thudSoundPath = 'thud2.wav';
+let thudSoundPath = 'https://rexdragin59.github.io/circledefense/thud2.wav';
+// let snareSoundPath = 'snare.wav';
+let snareSoundPath = 'https://rexdragin59.github.io/circledefense/snare.wav';
+// let spitSoundPath = 'spit.wav';
+let spitSoundPath = 'https://rexdragin59.github.io/circledefense/spit.wav';//'spit.wav';
+// let coinSoundPath = 'coinClink.wav';
+let coinSoundPath = 'https://rexdragin59.github.io/circledefense/coinClink.wav';
+//let birdSoundPath = 'birdSongs.mp3';
+let birdSoundPath = 'https://rexdragin59.github.io/circledefense/birdSongs.mp3';
+let birdAudio;	// Audio object
+// let tapSoundPath = 'tap.wav';
+let tapSoundPath = 'https://rexdragin59.github.io/circledefense/tap.wav';
+
+try
+{
+	load_sound_from_file(thudSoundPath);
+	load_sound_from_file(snareSoundPath);
+	load_sound_from_file(spitSoundPath);
+	load_sound_from_file(coinSoundPath);
+	load_sound_from_file(tapSoundPath);
+	load_sound_from_file(birdSoundPath);
+}
+catch(e)
+{
+	throw e.message;
+}
 
 const MUSIC_PLAY = 'MUSIC_PLAY';
 const MUSIC_PAUSE = 'MUSIC_PAUSE';
 function set_music_pause_play(musicPausePlay)
 {
-	if (birdAudio)
+	if (birdAudio && birdAudio.isLoaded)
 	{
 		if (musicPausePlay == MUSIC_PLAY)
 		{
@@ -2020,7 +2046,7 @@ function set_music_pause_play(musicPausePlay)
 
 function toggle_music_pause_play()
 {
-	if (birdAudio)
+	if (birdAudio && birdAudio.isLoaded)
 	{
 		if (birdAudio.paused)
 		{
@@ -2203,7 +2229,7 @@ StartGameButton.prototype.onclick = function()
 // constructor
 function UpgradeForksButton()
 {
-	let x = 50, y = 300, w = 60, h = 60;
+	let x = CANVAS_WIDTH/5, y = CANVAS_HEIGHT*2/3, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
 	let buttonRoundCornerRadius = 18.5;
 	let buttonOffColor = '#FF000080';
 	let buttonOverColor = '#0000FF80';
@@ -2241,7 +2267,7 @@ UpgradeForksButton.prototype.render = function()
 // constructor
 function UpgradeReloadButton()
 {
-	let x = 50, y = 100, w = 60, h = 60;
+	let x = CANVAS_WIDTH/5, y = CANVAS_HEIGHT*1/3, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
 	let buttonRoundCornerRadius = 18.5;
 	let buttonOffColor = '#FF000080';
 	let buttonOverColor = '#0000FF80';
@@ -2282,7 +2308,7 @@ const BULLET_INITIAL_SPEED = 2.7;
 let bulletSpeed = 0;
 function UpgradeShotSpeedButton()
 {
-	let x = 350, y = 100, w = 60, h = 60;
+	let x = CANVAS_WIDTH*3/5, y = CANVAS_HEIGHT*1/3, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
 	let buttonRoundCornerRadius = 18.5;
 	let buttonOffColor = '#FF000080';
 	let buttonOverColor = '#0000FF80';
@@ -2321,7 +2347,7 @@ const BULLET_INITIAL_ATK_POWER = 1.0;	// damage dealt per bullet
 let bulletAtkPower = 0;
 function UpgradeBulletAtkPowerButton()
 {
-	let x = 350, y = 300, w = 60, h = 60;
+	let x = CANVAS_WIDTH*3/5, y = CANVAS_HEIGHT*2/3, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
 	let buttonRoundCornerRadius = 18.5;
 	let buttonOffColor = '#FF000080';
 	let buttonOverColor = '#0000FF80';
@@ -2358,7 +2384,7 @@ UpgradeBulletAtkPowerButton.prototype.render = function()
 // constructor
 function FinishedUpgradesButton()
 {
-	let x = 550, y = 100, w = 40, h = 40;
+	let x = CANVAS_WIDTH*4/5, y = CANVAS_HEIGHT*1/3, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
 	let buttonRoundCornerRadius = 5.0;
 	let buttonOffColor = '#FF000080';
 	let buttonOverColor = '#0000FF80';
@@ -2742,7 +2768,7 @@ var game = {
 		// load resources
 		this.reset_game();
 		
-		birdAudio = new Audio('birdSongs.mp3');
+		birdAudio = new Audio(birdSoundPath);
 		birdAudio.addEventListener('loadeddata', function(){
 			birdAudio.isLoaded = true;
 		});
@@ -3168,53 +3194,50 @@ var game = {
 	// should only be called when gameState==start or gameState==restart or gameState==upgrade
 	play_next_level: function()
 	{
-		if (birdAudio.isLoaded)
+		// load grass blades
+		const MIN_OMEGA = 0.02;
+		const MAX_OMEGA = 0.05;
+		const MIN_BLADE_LEN = 18;
+		const MAX_BLADE_LEN = 38;
+		const MIN_AMPLITUDE = Math.PI/14;
+		const MAX_AMPLITUDE = Math.PI/10;
+		const MIN_EQUILIB_THETA = Math.PI*4/3;
+		const MAX_EQUILIB_THETA = Math.PI*5/3;
+		const NUM_GRASS_CLUMPS = 200;
+		const MIN_NUM_BLADES_PER_CLUMP = 3;
+		const MAX_NUM_BLADES_PER_CLUMP = 3;
+		const MAX_CLUMP_DIST_OFFSET = 14.56;
+		for(let i = 0; i < NUM_GRASS_CLUMPS; ++i)
 		{
-			// load grass blades
-			const MIN_OMEGA = 0.02;
-			const MAX_OMEGA = 0.05;
-			const MIN_BLADE_LEN = 18;
-			const MAX_BLADE_LEN = 38;
-			const MIN_AMPLITUDE = Math.PI/14;
-			const MAX_AMPLITUDE = Math.PI/10;
-			const MIN_EQUILIB_THETA = Math.PI*4/3;
-			const MAX_EQUILIB_THETA = Math.PI*5/3;
-			const NUM_GRASS_CLUMPS = 200;
-			const MIN_NUM_BLADES_PER_CLUMP = 3;
-			const MAX_NUM_BLADES_PER_CLUMP = 3;
-			const MAX_CLUMP_DIST_OFFSET = 14.56;
-			for(let i = 0; i < NUM_GRASS_CLUMPS; ++i)
+			let numBlades = Math.floor(lerp(MIN_NUM_BLADES_PER_CLUMP, MAX_NUM_BLADES_PER_CLUMP+1, Math.random()));
+			let clumpRootPos = new vec2( lerp(0, CANVAS_WIDTH, Math.random()), lerp(0, CANVAS_HEIGHT, Math.random()) );
+			for(let j = 0; j < numBlades; ++j)
 			{
-				let numBlades = Math.floor(lerp(MIN_NUM_BLADES_PER_CLUMP, MAX_NUM_BLADES_PER_CLUMP+1, Math.random()));
-				let clumpRootPos = new vec2( lerp(0, CANVAS_WIDTH, Math.random()), lerp(0, CANVAS_HEIGHT, Math.random()) );
-				for(let j = 0; j < numBlades; ++j)
-				{
-					let omega = lerp(MIN_OMEGA, MAX_OMEGA, Math.random());
-					let bladeRootPos = clumpRootPos.add(new vec2(MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1), MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1)));	// grass blades nearby but not bullseye-ing clump's root
-					let bladeLen = lerp(MIN_BLADE_LEN, MAX_BLADE_LEN, Math.random());
-					let theta0 = Math.random()*2*Math.PI;
-					let amplitude = lerp(MIN_AMPLITUDE, MAX_AMPLITUDE, Math.random());
-					let equilibTheta = lerp(MIN_EQUILIB_THETA, MAX_EQUILIB_THETA, Math.random());
-					let color = `hsl(${lerp(88, 132, Math.random())}, 100%, ${rnd_btwn(20, 35)}%, 100%)`;
-					let grassBlade = new GrassBlade(bladeRootPos, bladeLen, theta0, omega, amplitude, equilibTheta, color);
-					particleEngine.add_particle(grassBlade);
-				}
+				let omega = lerp(MIN_OMEGA, MAX_OMEGA, Math.random());
+				let bladeRootPos = clumpRootPos.add(new vec2(MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1), MAX_CLUMP_DIST_OFFSET*(2*Math.random()-1)));	// grass blades nearby but not bullseye-ing clump's root
+				let bladeLen = lerp(MIN_BLADE_LEN, MAX_BLADE_LEN, Math.random());
+				let theta0 = Math.random()*2*Math.PI;
+				let amplitude = lerp(MIN_AMPLITUDE, MAX_AMPLITUDE, Math.random());
+				let equilibTheta = lerp(MIN_EQUILIB_THETA, MAX_EQUILIB_THETA, Math.random());
+				let color = `hsl(${lerp(88, 132, Math.random())}, 100%, ${rnd_btwn(20, 35)}%, 100%)`;
+				let grassBlade = new GrassBlade(bladeRootPos, bladeLen, theta0, omega, amplitude, equilibTheta, color);
+				particleEngine.add_particle(grassBlade);
 			}
-		
-			set_music_pause_play(MUSIC_PLAY);
-			activeButtons.splice(0);	// delete all existing buttons
-			++currLevel;
-			nextEnemySpawnIndex = 0;
-			levelCompleteFrame = undefined;
-			gameState = GAME_STATE_PLAYING;
-			levelStartFrame = frame;
 		}
+	
+		set_music_pause_play(MUSIC_PLAY);
+		activeButtons.splice(0);	// delete all existing buttons
+		++currLevel;
+		nextEnemySpawnIndex = 0;
+		levelCompleteFrame = undefined;
+		gameState = GAME_STATE_PLAYING;
+		levelStartFrame = frame;
 	},
 	
 	render_pause_overlay: function()
 	{
 		camera.set_identity_matrix();
-		const PAUSE_SCREEN_COLOR = '#00000010';
+		const PAUSE_SCREEN_COLOR = '#000000B0';
 		ctx.fillStyle = PAUSE_SCREEN_COLOR;
 		ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 		
@@ -3227,8 +3250,16 @@ var game = {
 	},
 	
 	gameLoop: function(){
-		this.update();
-		this.render();
+		try
+		{
+			this.update();
+			this.render();
+		}
+		catch(e)
+		{
+			document.getElementById('errorMarquee').innerText = `^${e.message}$`;	// for mobile-friendly debugging
+			throw e;
+		}
 	},
 		
 	run: function(){
@@ -3238,11 +3269,20 @@ var game = {
 };
 
 function startGame(){
-	console.log("game started");
-	game.setup();
-	game.run();
+	try
+	{
+		console.log("game started");
+		game.setup();
+		game.run();
+	}
+	catch(e)
+	{
+		document.getElementById('errorMarquee').innerText = e.message;
+		throw e;
+	}
 }
 
+document.getElementById('errorMarquee').innerText = 'Compile success';	// for mobile-friendly debugging
 </script>
 </body>
 </html>
