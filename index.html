@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Javascript game</title>
+	<title>circle defense game</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<!--link rel = "icon" href = "minimalLogo.png" type = "image/x-icon"-->
-	<link rel = "icon" href = "https://rexdragin59.github.io/circledefense/minimalLogo.png" type = "image/x-icon">
+	<link rel = "icon" href="minimalLogo.png" type = "image/x-icon">
 </head>
 <body onload = "startGame()">
 <div>
 	<canvas id="myCanvas" width="600" height="480" style="border: 2px solid black;"></canvas>
-	<p id="errorMarquee">Javascript did not compile</p>
+	<div id="errorMarquee" style="font-family: courier new; font-size: 10px;">Javascript did not compile</div>
+	<!-- "Javascript did not compile" will be the default text for errorMarque, since syntax errors cause compilation to abort, and all changes to errorMarquee in the javascript will be skipped over -->
+	<div id="fpsDisplay" font="courier new" style="user-select: none">FPS:----</div>
 	<!-- error marquee is for debugging on mobile -->
 	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause and also toggle music mute, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
 	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins</p>
-	<div id="fpsDisplay" style="user-select: none">FPS:</div>
 </div>
 <script>
 
@@ -23,10 +24,22 @@ let canvas = undefined;
 let ctx = undefined;
 let xCanvas = undefined;
 let yCanvas = undefined;
+let xMouse, yMouse;
 const FPS = 60;
 let frame = 0;
 let debugFrame = 0;
 const UNIVERSAL_LINE_WIDTH = 2;
+
+const FONT_FRACTION_0 = 9.9/CANVAS_WIDTH;
+const FONT_FRACTION_1 = 20/CANVAS_WIDTH;
+const FONT_FRACTION_2 = 26/CANVAS_WIDTH;
+const FONT_FRACTION_3 = 66/CANVAS_WIDTH;
+const FONT_FRACTION_4 = 86/CANVAS_WIDTH;
+
+function set_font(canvasWidthFraction)
+{
+	ctx.font = `${Math.floor(CANVAS_WIDTH*canvasWidthFraction)}px Courier New`;
+}
 
 // constructor
 function vec2(x, y, debugId = undefined){
@@ -963,8 +976,8 @@ EnemyCrab.create_random_crab = function()
 	const MAX_ENEMY_SPEED = 1.85;
 	const MIN_ENEMY_RADIUS = 25.5;
 	const MAX_ENEMY_RADIUS = 35.5;
-	const MIN_ENEMY_Y = 130;
-	const MAX_ENEMY_Y = 230;
+	const MIN_ENEMY_Y = CANVAS_HEIGHT*0.25;
+	const MAX_ENEMY_Y = CANVAS_HEIGHT*0.5;
 	const MAX_TARGET_OFFSET = 25;
 	let radius = Math.random()*(MAX_ENEMY_RADIUS-MIN_ENEMY_RADIUS)+MIN_ENEMY_RADIUS;
 	let x = Math.random() < 0.5 ? -radius+1 : CANVAS_WIDTH+radius-1;	// barely onscreen to avoid being deleted immediately
@@ -1065,8 +1078,6 @@ EnemyFrog.create_random_frog = function()
 	const MAX_ENEMY_RADIUS = 55.5;
 	const FROG_HEALTH = 2.1;
 	let radius = rnd_btwn(MIN_ENEMY_RADIUS, MAX_ENEMY_RADIUS);
-	const MIN_ENEMY_Y = 130;
-	const MAX_ENEMY_Y = 230;
 	let x = Math.random()*CANVAS_WIDTH;
 	let y = -radius+1;	// barely onscreen to avoid being deleted immediately
 	const MAX_TARGET_OFFSET = 25;
@@ -1294,7 +1305,7 @@ EnemySnake.NOSE_LEN_RATIO = 1.5;
 
 EnemySnake.create_random_snake = function()
 {
-	const SNAKE_ROPE_LEN = 15;
+	const SNAKE_ROPE_LEN = 10;
 	if (Math.random() < 0.5)
 	{
 		return new EnemySnake(new vec2(CANVAS_WIDTH, CANVAS_HEIGHT*2/9), new vec2(-1, 0), SNAKE_ROPE_LEN);
@@ -1314,7 +1325,7 @@ EnemySnake.prototype.get_next_waypoint = function()
 	}
 	
 	const NUM_ATTEMPTS = 100;
-	const MIN_DIST_AWAY = Math.max(CANVAS_WIDTH, CANVAS_HEIGHT)/2;
+	const MIN_DIST_AWAY = Math.min(CANVAS_WIDTH, CANVAS_HEIGHT)/2;
 	for(let i = 0; i < NUM_ATTEMPTS; ++i)
 	{
 		let waypoint = new vec2(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT*3/9);
@@ -1981,47 +1992,110 @@ function draw_image_align_line_segs(img, pic0, dst0, pic1, dst1, mustReflect = f
 	ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);		// reset transformation matrix
 }
 
-// load for future use but do not play right now
-function load_sound_from_file(path)
+const NUM_SOUND_COPIES = 5;
+// constructor
+function ShortSoundEngine()
 {
-	let audio = new Audio(path);
+	this.soundLib = {};	// soundLib[soundPathName] = Array of Audio
+		// need multiple Audio for each sound file to play same sound multiple times simultaneously, such as bullet shot sound effects
+	this.hasUnlockedPermission = false;	// Boolean whether Audio.play() can be called anytime
 }
 
-function play_sound_from_file(path)
+let shortSoundEngine = new ShortSoundEngine();
+
+ShortSoundEngine.prototype.load_sounds = function()
 {
-	let audio = new Audio(path);
-	audio.addEventListener('loadeddata', function(){
-		audio.play();
+	if (Object.keys(this.soundLib).length > 0)
+	{
+		// ignores call if sounds are already loaded
+		return;
+	}
+	
+	let soundPaths = [thudSoundPath, snareSoundPath, spitSoundPath, coinSoundPath, birdSoundPath, tapSoundPath];
+	for(let soundPath of soundPaths)
+	{
+		this.soundLib[soundPath] = new Array(NUM_SOUND_COPIES).fill().map(x => {
+			let aud = new Audio(soundPath);
+			aud.onloadstart = () => {aud.isLoaded = true;};
+				// on PC, the events fire in this sequence: [loadstart, durationchange, loadedmetadata, loadeddata, canplay, canplaythrough], where on iPhone, the events fire in this sequence: [loadstart, durationchange, loadedmetadata]
+			return aud;
+		});
+	}
+	
+	// for testing mobile vs PC HTMLMediaElement events
+	['abort', 'canplay', 'canplaythrough', 'durationchange', 'emptied', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'ratechange'].forEach(evStr => {
+		this.soundLib[thudSoundPath][0].addEventListener(evStr, function(e){
+			write_marquee(evStr);
+		});
 	});
 }
 
-// let thudSoundPath = 'thud2.wav';
-let thudSoundPath = 'https://rexdragin59.github.io/circledefense/thud2.wav';
-// let snareSoundPath = 'snare.wav';
-let snareSoundPath = 'https://rexdragin59.github.io/circledefense/snare.wav';
-// let spitSoundPath = 'spit.wav';
-let spitSoundPath = 'https://rexdragin59.github.io/circledefense/spit.wav';//'spit.wav';
-// let coinSoundPath = 'coinClink.wav';
-let coinSoundPath = 'https://rexdragin59.github.io/circledefense/coinClink.wav';
-//let birdSoundPath = 'birdSongs.mp3';
-let birdSoundPath = 'https://rexdragin59.github.io/circledefense/birdSongs.mp3';
-let birdAudio;	// Audio object
-// let tapSoundPath = 'tap.wav';
-let tapSoundPath = 'https://rexdragin59.github.io/circledefense/tap.wav';
+ShortSoundEngine.prototype.is_done_loading = function()
+{
+	return Object.values(this.soundLib).every( audArr => audArr.every(aud => aud.isLoaded) );
+}
 
-try
+// must call each Audio's .play() for the first time inside event callback, otherwise iOS will susequently throw NotAllowedError for calling Audio.play() inside not-event-callback scope
+// returns Boolean whether every sound was successfully played
+ShortSoundEngine.prototype.unlock_sound_permission = function()
 {
-	load_sound_from_file(thudSoundPath);
-	load_sound_from_file(snareSoundPath);
-	load_sound_from_file(spitSoundPath);
-	load_sound_from_file(coinSoundPath);
-	load_sound_from_file(tapSoundPath);
-	load_sound_from_file(birdSoundPath);
+	for(let soundPath in this.soundLib)
+	{
+		for(let aud of this.soundLib[soundPath])
+		{
+			if (!aud.isLoaded)
+			{
+				write_marquee(`"${aud.src}" not loaded enough to play`);
+				return false;
+			}
+			
+			aud.play().catch(e => {
+				write_marquee(`rejected playing sound "${aud.src}": ${e.toString()}`);
+			});
+			if (aud.paused)
+			{
+				aud.pause();	// explicitly pause just in case .play() started playinga after returning from ShortSoundEngine.unlock_sound_permission()
+				return false;
+			}
+			aud.pause();	// pause immediately in order to NOT play the sound right now
+		}
+	}
+	this.hasUnlockedPermission = true;
+	return true;
 }
-catch(e)
+
+ShortSoundEngine.prototype.play_sound = function(soundFilePath)
 {
-	throw e.message;
+	if (!(soundFilePath in this.soundLib))
+	{
+		throw new Error(`cannot find sound "${soundFilePath}" in short sound engine`);
+	}
+	
+	// find first available sound
+	let sound = this.soundLib[soundFilePath].find(aud => aud.paused);
+	if (sound)
+	{
+		sound.currentTime = 0;
+		sound.play().catch(e => {
+			write_marquee(`rejected playing sound "${soundFilePath}": ${e.toString()}`);
+		});
+	}
+	else
+	{
+		console.log(`all Audio for sound "${soundFilePath}" occupied; cannot request another`);	// silently fail to play sound
+	}
 }
+
+let thudSoundPath = 'thud2.wav';
+let snareSoundPath = 'snare.wav';
+let spitSoundPath = 'spit.wav';
+let coinSoundPath = 'coinClink.wav';
+let birdSoundPath = 'birdSongs.mp3';
+let tapSoundPath = 'tap.wav';
+let birdAudio;	// Audio object for long song
+
+console.log('TODO bring all birdAudio functionality into ShortSoundEngine class');
+console.log('figure out why star particles and smoke particles are so CPU-intensive on iPhone');
 
 const MUSIC_PLAY = 'MUSIC_PLAY';
 const MUSIC_PAUSE = 'MUSIC_PAUSE';
@@ -2223,7 +2297,19 @@ StartGameButton.prototype = Object.create(Button.prototype);
 
 StartGameButton.prototype.onclick = function()
 {
-	game.play_next_level();	// calling game.play_next_level() is ignored if birdAudio not loaded
+	// must call each Audio's .play() for the first time inside event callback, otherwise iOS will susequently throw NotAllowedError for calling Audio.play() inside not-event-callback scope
+	if (!shortSoundEngine.hasUnlockedPermission)
+	{
+		if (shortSoundEngine.unlock_sound_permission())
+		{
+			game.play_next_level();	// calling game.play_next_level() is ignored if birdAudio not loaded
+		}
+		else
+		{
+			write_marquee('failed to unlock sound permissions; game.play_next_level() ignored');
+		}
+	}
+		
 }
 
 // constructor
@@ -2257,8 +2343,8 @@ UpgradeForksButton.prototype.onclick = function()
 
 UpgradeForksButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);	
-	ctx.font = "20px Courier New";
+	Button.prototype.render.call(this);
+	set_font(FONT_FRACTION_0);
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`# forks: ${nCannonBulletForks}`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? `${nCannonBulletForks*3} coins` : '---'}`, this.x, this.y + this.h + 40);
@@ -2297,7 +2383,7 @@ UpgradeReloadButton.prototype.onclick = function()
 UpgradeReloadButton.prototype.render = function()
 {
 	Button.prototype.render.call(this);	
-	ctx.font = "20px Courier New";
+	set_font(FONT_FRACTION_0);
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`shot delay: ${cannonReloadDuration} frames`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? '10 coins' : '---'}`, this.x, this.y + this.h + 40);
@@ -2335,8 +2421,8 @@ UpgradeShotSpeedButton.prototype.onclick = function()
 
 UpgradeShotSpeedButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);	
-	ctx.font = "20px Courier New";
+	Button.prototype.render.call(this);
+	set_font(FONT_FRACTION_0);
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`shot speed: ${bulletSpeed}`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? '4 coins' : '---'}`, this.x, this.y + this.h + 40);
@@ -2374,8 +2460,8 @@ UpgradeBulletAtkPowerButton.prototype.onclick = function()
 
 UpgradeBulletAtkPowerButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);	
-	ctx.font = "20px Courier New";
+	Button.prototype.render.call(this);
+	set_font(FONT_FRACTION_0);
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`atk: ${bulletAtkPower}`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? '7 coins' : '---'}`, this.x, this.y + this.h + 40);
@@ -2384,7 +2470,7 @@ UpgradeBulletAtkPowerButton.prototype.render = function()
 // constructor
 function FinishedUpgradesButton()
 {
-	let x = CANVAS_WIDTH*4/5, y = CANVAS_HEIGHT*1/3, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
+	let x = CANVAS_WIDTH*4/5, y = CANVAS_HEIGHT*1/6, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
 	let buttonRoundCornerRadius = 5.0;
 	let buttonOffColor = '#FF000080';
 	let buttonOverColor = '#0000FF80';
@@ -2401,10 +2487,10 @@ FinishedUpgradesButton.prototype.onclick = function()
 
 FinishedUpgradesButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);	
-	ctx.font = "20px Courier New";
+	Button.prototype.render.call(this);
+	set_font(FONT_FRACTION_0);
 	ctx.fillStyle = '#FFFFFFFF';
-	ctx.fillText(`next level`, this.x, this.y + this.h + 20);
+	ctx.fillText('next level', this.x, this.y + this.h + 20);
 }
 
 let activeButtons = [];	// Array of (subclasses of) Button
@@ -2605,7 +2691,23 @@ let levelStartFrame = 0;
 let currLevel = -1;
 let nextEnemySpawnIndex = 0;
 let levelCompleteFrame = undefined;	// first frame where all enemies have been killed; undefined if level is not yet complete
+const FPS_QTY_FRAMES_TO_RECORD = 60;
+let fpsRecord = new Array(FPS_QTY_FRAMES_TO_RECORD).fill(0);
 
+const MARQUEE_STRS_MAX_QTY = 10;
+let marqueeStrs = [];	// Array of String of length at most MARQUEE_STRS_MAX_QTY
+let marqueeFirstIndex = 0;
+function write_marquee(str)
+{
+	marqueeStrs.push(str);
+	if (marqueeStrs.length > MARQUEE_STRS_MAX_QTY)
+	{
+		marqueeStrs.splice(0, 1);
+		++marqueeFirstIndex;
+	}
+	document.getElementById('errorMarquee').innerText = marqueeStrs.map((str, i) => (i+marqueeFirstIndex).toString().concat('>', str)).join('\n');
+
+}
 var game = {
 	// set canvas and create Context
 	
@@ -2764,7 +2866,7 @@ var game = {
 				} // end if !gamePaused
 			}	// end if gameState == playing || gameState == upgrade
 		}.bind(this));
-
+		
 		// load resources
 		this.reset_game();
 		
@@ -2777,6 +2879,8 @@ var game = {
 			birdAudio.currentTime = 0;
 			birdAudio.play();
 		});
+		
+		shortSoundEngine.load_sounds();	// load short sounds
 		
 		// load more things
 	},
@@ -2845,7 +2949,7 @@ var game = {
 												direc.mult(bulletSpeed), BULLET_RADIUS);
 						particleEngine.add_particle(bullet);
 					}
-					play_sound_from_file(spitSoundPath);
+					shortSoundEngine.play_sound(spitSoundPath);
 				}
 			}
 			
@@ -2864,7 +2968,7 @@ var game = {
 						b1.isActive = false;
 						particleEngine.create_smoke_puffs(get_circle_collision_loc(b1.pos, e1.pos, b1.radius, e1.radius));
 						bullets = bullets.slice(0, b).concat(bullets.slice(b+1));
-						play_sound_from_file(tapSoundPath);
+						shortSoundEngine.play_sound(tapSoundPath);
 						
 						// damage dealt to enemy
 						e1.take_damage(bulletAtkPower);
@@ -2872,7 +2976,7 @@ var game = {
 						{
 							e1.isActive = false;
 							particleEngine.create_star_explosion(e1.pos);
-							play_sound_from_file(thudSoundPath);
+							shortSoundEngine.play_sound(thudSoundPath);
 							
 							const COIN_RADIUS = 20;
 							particleEngine.add_particle(new Coin(e1.pos, COIN_RADIUS)); // drop coin
@@ -2894,12 +2998,12 @@ var game = {
 					particleEngine.create_star_explosion(e1.pos);
 					e1.isActive = false;
 					enemies = enemies.slice(0, e).concat(enemies.slice(e+1));
-					play_sound_from_file(thudSoundPath);
+					shortSoundEngine.play_sound(thudSoundPath);
 
 					if (frame >= lastCannonHurtFrame + CANNON_HURT_DURATION)
 					{
 						// enemy has hurt cannon
-						play_sound_from_file(snareSoundPath);
+						shortSoundEngine.play_sound(snareSoundPath);
 						
 						--cannonHealth;
 						if (cannonHealth == 0)
@@ -2923,7 +3027,7 @@ var game = {
 				if (does_circle_contain_point(mouseLoc, CURSOR_COIN_COLLECT_RADIUS + coin.radius, coin.pos))
 				{
 					coin.evaporate();
-					play_sound_from_file(coinSoundPath);
+					shortSoundEngine.play_sound(coinSoundPath);
 					++nCoins;
 				}
 			});
@@ -2960,13 +3064,26 @@ var game = {
 			
 			// fps
 			let currTime = new Date().getTime();
+			fpsRecord.splice(0, 1);
+			fpsRecord.push(1000/(currTime-prevFrameTime));
+			let mean = fpsRecord.reduce((accum, fps) => accum + fps)/FPS_QTY_FRAMES_TO_RECORD;
+			let sumFpsSq = fpsRecord.map(fps => fps*fps).reduce((accum, fpsSq) => accum + fpsSq);
+			let sampSd = Math.sqrt( (sumFpsSq-FPS_QTY_FRAMES_TO_RECORD*mean**2)/(FPS_QTY_FRAMES_TO_RECORD-1) );
 			if (frame % NUM_FRAMES_PER_FPS_UPDATE == 0)
 			{
-				document.getElementById("fpsDisplay").innerText = 'FPS: '.concat((1000/(currTime-prevFrameTime)).toFixed(1));
+				
+				document.getElementById("fpsDisplay").innerText = 'FPS mean: '.concat(mean.toFixed(1), '    FPS sampSd: ', sampSd.toFixed(1));
 			}
 			prevFrameTime = currTime;
 			
 			++frame;
+		}
+		else if (gameState == GAME_STATE_START)
+		{
+			if (activeButtons.length == 0 && shortSoundEngine.is_done_loading())
+			{
+				activeButtons.push(new StartGameButton());
+			}
 		}
 		
 		if (!debugFlailPaused)
@@ -3061,7 +3178,7 @@ var game = {
 			const LEVEL_START_WAIT_DURATION = 180;
 			if (frame - levelStartFrame < LEVEL_START_WAIT_DURATION)
 			{
-				ctx.font = '86px Courier New';
+				set_font(FONT_FRACTION_2);
 				ctx.fillStyle = '#FFFFFF';
 				ctx.fillText(`LEVEL ${currLevel}`, 220, CANVAS_HEIGHT/2);
 			}
@@ -3069,12 +3186,12 @@ var game = {
 			// render Level Complete text
 			if (levelCompleteFrame != undefined)
 			{
-				ctx.font = '66px Courier New';
+				set_font(FONT_FRACTION_2);
 				ctx.fillStyle = '#FFFFFF';
 				ctx.fillText('LEVEL COMPLETE', 100, CANVAS_HEIGHT/2);
 				if (currLevel == enemySpawnTimelines.length - 1)
 				{
-					ctx.font = '26px Courier New';
+					set_font(FONT_FRACTION_2);
 					ctx.fillText('ALL LEVELS COMPLETE, returning to title screen', 20, CANVAS_HEIGHT*3/4);
 				}
 			}
@@ -3095,7 +3212,7 @@ var game = {
 			this.render_coin_display();
 			
 			camera.set_identity_matrix();
-			ctx.font = "40px Courier New";
+			set_font(FONT_FRACTION_2);
 			ctx.fillStyle = '#FFFFFFFF';
 			ctx.fillText('UPGRADE SCREEN', 50, 10);
 			
@@ -3107,7 +3224,7 @@ var game = {
 		}
 		else if (gameState == GAME_STATE_START || gameState == GAME_STATE_RESTART)
 		{
-			ctx.font = "30px Courier New";
+			set_font(FONT_FRACTION_2);
 			ctx.fillStyle = '#FFFFFFFF';
 			if (gameState == GAME_STATE_START)
 			{
@@ -3130,7 +3247,7 @@ var game = {
 	render_coin_display: function()
 	{
 		camera.set_identity_matrix();
-		ctx.font = "20px Courier New";
+		set_font(FONT_FRACTION_1);
 		ctx.fillStyle = '#FFFFFFFF';
 		const COIN_DISPLAY_MINUS_X = 150;
 		const COIN_DISPLAY_Y = 10;
@@ -3174,7 +3291,8 @@ var game = {
 		}
 		nCoins = 0;
 		
-		activeButtons.push(new StartGameButton());
+		// activeButtons.push(new StartGameButton());
+		// let game.update() add StartGameButton to screen after shortSoundEngine finishes loading all sounds
 	},
 	
 	// should only be called to go from gameState==playing to gameState==upgrade
@@ -3203,7 +3321,7 @@ var game = {
 		const MAX_AMPLITUDE = Math.PI/10;
 		const MIN_EQUILIB_THETA = Math.PI*4/3;
 		const MAX_EQUILIB_THETA = Math.PI*5/3;
-		const NUM_GRASS_CLUMPS = 200;
+		const NUM_GRASS_CLUMPS = 5;	// 200
 		const MIN_NUM_BLADES_PER_CLUMP = 3;
 		const MAX_NUM_BLADES_PER_CLUMP = 3;
 		const MAX_CLUMP_DIST_OFFSET = 14.56;
@@ -3242,7 +3360,7 @@ var game = {
 		ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 		
 		const PAUSE_SCREEN_TEXT_COLOR = '#EEFFEEFF';
-		ctx.font = '80px Courier New';
+		set_font(FONT_FRACTION_4);
 		let pauseText = 'GAME PAUSED';
 		ctx.fillStyle = PAUSE_SCREEN_TEXT_COLOR;
 		ctx.fillText(pauseText, CANVAS_WIDTH/2 - ctx.measureText(pauseText).width/2, CANVAS_HEIGHT/2);
@@ -3257,7 +3375,7 @@ var game = {
 		}
 		catch(e)
 		{
-			document.getElementById('errorMarquee').innerText = `^${e.message}$`;	// for mobile-friendly debugging
+			write_marquee(`^${e.message}$`);	// for mobile-friendly debugging
 			throw e;
 		}
 	},
@@ -3277,12 +3395,12 @@ function startGame(){
 	}
 	catch(e)
 	{
-		document.getElementById('errorMarquee').innerText = e.message;
+		write_marquee(e.message);
 		throw e;
 	}
 }
 
-document.getElementById('errorMarquee').innerText = 'Compile success';	// for mobile-friendly debugging
+write_marquee('Compile success');	// for mobile-friendly debugging
 </script>
 </body>
 </html>
