@@ -1,45 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>circle defense game</title>
+	<title>Javascript game</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<!--link rel = "icon" href = "minimalLogo.png" type = "image/x-icon"-->
-	<link rel = "icon" href="minimalLogo.png" type = "image/x-icon">
+	<link rel="icon" href="./minimalLogo.png" type="image/x-icon">
 </head>
-<body onload = "startGame()">
+<body>
 <div>
 	<canvas id="myCanvas" width="600" height="480" style="border: 2px solid black;"></canvas>
-	<div id="errorMarquee" style="font-family: courier new; font-size: 10px;">Javascript did not compile</div>
-	<!-- "Javascript did not compile" will be the default text for errorMarque, since syntax errors cause compilation to abort, and all changes to errorMarquee in the javascript will be skipped over -->
-	<div id="fpsDisplay" font="courier new" style="user-select: none">FPS:----</div>
-	<!-- error marquee is for debugging on mobile -->
+	<p id="errorMarquee">Javascript did not compile</p>
+		<!-- error marquee is for debugging on mobile -->
 	<p style="font-size:30px; user-select: none;">Circle defense game; press (8), (9) to zoom out/in, (0) to reset camera, wasd to pan camera, (p) to toggle pause and also toggle music mute, (o) to toggle debug pause, hold down left mouse button to shoot at enemies</p>
 	<p style="font-size:30px; user-select: none;">click translucent red button to upgrade cannon, using cursor to collect coins</p>
+	<div id="fpsDisplay" style="user-select: none">FPS:</div>
 </div>
 <script>
 
 const CANVAS_WIDTH = Math.min(800, screen.width*13/14);	// mobile-friendly
-const CANVAS_HEIGHT = Math.min(480, screen.height*13/14);
+const CANVAS_HEIGHT = Math.min(600, screen.width*13/14);	// mobile-friendly
 let canvas = undefined;
 let ctx = undefined;
 let xCanvas = undefined;
 let yCanvas = undefined;
-let xMouse, yMouse;
+const UNIVERSAL_LINE_WIDTH = 2;
 const FPS = 60;
 let frame = 0;
 let debugFrame = 0;
-const UNIVERSAL_LINE_WIDTH = 2;
-
-const FONT_FRACTION_0 = 9.9/CANVAS_WIDTH;
-const FONT_FRACTION_1 = 20/CANVAS_WIDTH;
-const FONT_FRACTION_2 = 26/CANVAS_WIDTH;
-const FONT_FRACTION_3 = 66/CANVAS_WIDTH;
-const FONT_FRACTION_4 = 86/CANVAS_WIDTH;
-
-function set_font(canvasWidthFraction)
-{
-	ctx.font = `${Math.floor(CANVAS_WIDTH*canvasWidthFraction)}px Courier New`;
-}
 
 // constructor
 function vec2(x, y, debugId = undefined){
@@ -171,6 +158,7 @@ vec2.prototype.render_debug_id = function(colorStr)
 {
 	this.render_offset_legend_text(this.debugId, colorStr, get_legend_offset(this.debugId.toString()));
 }
+
 
 // constructor
 function LineSeg(r1, r2, debugId = undefined)
@@ -361,7 +349,6 @@ Rect.prototype.contains_vec2 = function(v, isBorderIncluded = true)
 {
 	return this.contains_xy(v.x, v.y, isBorderIncluded);
 }
-
 
 // returns an Image(), possibly not yet loaded
 function load_image(filepath){
@@ -583,14 +570,14 @@ Polygon.prototype.is_intersecting_convex_polygon = function(poly)
 	return this.vertices.map((v, i) => {
 		let i1 = (i+1) % this.vertices.length;
 		let axis = v.subtract(this.vertices[i1]).rotate(Math.PI/2);
-		return axis;
+		return axis;	// all axes perpendicular to this Polygon
 	}).concat(
 		poly.vertices.map((v, i) => {
 			let i1 = (i+1) % poly.vertices.length;
 			let axis = v.subtract(poly.vertices[i1]).rotate(Math.PI/2);
-			return axis;
+			return axis;	// all axes perpendicular to arg Polygon
 		})
-	).filter(v => !v.is_zero()).every(axis => {
+	).filter(axis => !axis.is_zero()).every(axis => {
 		let dpSelf = this.vertices.map(v => vec2.dot(v, axis));
 		let dpPoly = poly.vertices.map(v => vec2.dot(v, axis));
 		let minSelf = Math.min.apply(undefined, dpSelf);
@@ -625,41 +612,6 @@ Polygon.prototype.is_intersecting_circle = function(circleCenter, circleRadius)
 		let maxCirc = Math.max.apply(undefined, dpCirc);
 		return minSelf <= maxCirc && minCirc <= maxSelf;
 	});
-}
-
-function* gen_id(startIndex = 0, prefix = undefined)
-{
-	for(let i = startIndex; true; ++i)
-	{
-		yield (prefix != undefined ? prefix : '').concat(i);
-	}
-}
-
-// base class constructor
-function Particle()
-{
-	this.debugId = Particle.particleIdGen.next().value;
-}
-Particle.particleIdGen = gen_id(0);	// static member
-
-Particle.prototype.is_dead = function()
-{
-	throw "un-overridden abstract base class method is_dead()";
-}
-
-Particle.prototype.get_y_priority = function()
-{
-	throw "un-overridden abstract base class method get_y_priority()";
-}
-
-Particle.prototype.update = function()
-{
-	throw "un-overridden abstract base class method update()";
-}
-
-Particle.prototype.render = function()
-{
-	throw "un-overridden abstract base class method render()";
 }
 
 // constructor
@@ -761,7 +713,7 @@ BouncingStar.create_star = function(nPoints, x, y, vx, vy, omega, outerRadius = 
 	return new BouncingStar(x, y, vx, vy, omega, polygon);
 }
 
-MAX_NUM_PARTICLES = 1000;
+const MAX_NUM_PARTICLES = 1000;
 // constructor
 function ParticleEngine()
 {
@@ -845,6 +797,8 @@ let gamePaused = false;
 let mustImmediatePause = false;	// for advancing 1 frame
 let debugFlailPaused = false;
 
+
+
 let mouseLoc = new vec2(0, 0);	// world coords
 let mouseDownLoc;	// vec2; undefined if mouse is not down; world coords
 let cannonBarrelRecoilPos = 0.0;
@@ -898,6 +852,17 @@ function get_circle_collision_loc(p1, p2, r1, r2)
 		return p1;
 	}
 	return p1.add( p2.subtract(p1).mult(r2/(r1+r2)) );
+}
+
+// returns "<num>px" string whose (textMetrics.fontBoundingBoxAscent + .fontBoundingBoxDescent) is equal to arg height
+function get_font_size(height, fontFamily)
+{
+	if (fontFamily == "Bubbly")
+	{
+		// height = 1.28680249*cssPixelSize + 0.05477844
+		return `${(height - 0.05477844)/1.28680249}px`;
+	}
+	throw new Error(`unknown font family: (${fontFamily})`);
 }
 
 // constructor
@@ -976,8 +941,8 @@ EnemyCrab.create_random_crab = function()
 	const MAX_ENEMY_SPEED = 1.85;
 	const MIN_ENEMY_RADIUS = 25.5;
 	const MAX_ENEMY_RADIUS = 35.5;
-	const MIN_ENEMY_Y = CANVAS_HEIGHT*0.25;
-	const MAX_ENEMY_Y = CANVAS_HEIGHT*0.5;
+	const MIN_ENEMY_Y = 130;
+	const MAX_ENEMY_Y = 230;
 	const MAX_TARGET_OFFSET = 25;
 	let radius = Math.random()*(MAX_ENEMY_RADIUS-MIN_ENEMY_RADIUS)+MIN_ENEMY_RADIUS;
 	let x = Math.random() < 0.5 ? -radius+1 : CANVAS_WIDTH+radius-1;	// barely onscreen to avoid being deleted immediately
@@ -1078,6 +1043,8 @@ EnemyFrog.create_random_frog = function()
 	const MAX_ENEMY_RADIUS = 55.5;
 	const FROG_HEALTH = 2.1;
 	let radius = rnd_btwn(MIN_ENEMY_RADIUS, MAX_ENEMY_RADIUS);
+	const MIN_ENEMY_Y = 130;
+	const MAX_ENEMY_Y = 230;
 	let x = Math.random()*CANVAS_WIDTH;
 	let y = -radius+1;	// barely onscreen to avoid being deleted immediately
 	const MAX_TARGET_OFFSET = 25;
@@ -1300,7 +1267,7 @@ function EnemySnake(pos, direc, ropeSegLen)
 
 EnemySnake.prototype = Object.create(Enemy.prototype);
 EnemySnake.SNAKE_MESH_WIDTH = 2;
-EnemySnake.SNAKE_MESH_HEIGHT = 20;
+EnemySnake.SNAKE_MESH_HEIGHT = 25;
 EnemySnake.NOSE_LEN_RATIO = 1.5;
 
 EnemySnake.create_random_snake = function()
@@ -1594,6 +1561,41 @@ Bullet.prototype.render = function()
 	gradient.addColorStop(.5, '#4f453f');
 	gradient.addColorStop(1, '#3c3b3b');
 	this.pos.render_solid(gradient, this.radius);
+}
+
+function* gen_id(startIndex = 0, prefix = undefined)
+{
+	for(let i = startIndex; true; ++i)
+	{
+		yield (prefix != undefined ? prefix : '').concat(i);
+	}
+}
+
+// base class constructor
+function Particle()
+{
+	this.debugId = Particle.particleIdGen.next().value;
+}
+Particle.particleIdGen = gen_id(0);	// static member
+
+Particle.prototype.is_dead = function()
+{
+	throw "un-overridden abstract base class method is_dead()";
+}
+
+Particle.prototype.get_y_priority = function()
+{
+	throw "un-overridden abstract base class method get_y_priority()";
+}
+
+Particle.prototype.update = function()
+{
+	throw "un-overridden abstract base class method update()";
+}
+
+Particle.prototype.render = function()
+{
+	throw "un-overridden abstract base class method render()";
 }
 
 // constructor
@@ -1992,110 +1994,47 @@ function draw_image_align_line_segs(img, pic0, dst0, pic1, dst1, mustReflect = f
 	ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);		// reset transformation matrix
 }
 
-const NUM_SOUND_COPIES = 5;
-// constructor
-function ShortSoundEngine()
+// load for future use but do not play right now
+function load_sound_from_file(path)
 {
-	this.soundLib = {};	// soundLib[soundPathName] = Array of Audio
-		// need multiple Audio for each sound file to play same sound multiple times simultaneously, such as bullet shot sound effects
-	this.hasUnlockedPermission = false;	// Boolean whether Audio.play() can be called anytime
+	let audio = new Audio(path);
 }
 
-let shortSoundEngine = new ShortSoundEngine();
-
-ShortSoundEngine.prototype.load_sounds = function()
+function play_sound_from_file(path)
 {
-	if (Object.keys(this.soundLib).length > 0)
-	{
-		// ignores call if sounds are already loaded
-		return;
-	}
-	
-	let soundPaths = [thudSoundPath, snareSoundPath, spitSoundPath, coinSoundPath, birdSoundPath, tapSoundPath];
-	for(let soundPath of soundPaths)
-	{
-		this.soundLib[soundPath] = new Array(NUM_SOUND_COPIES).fill().map(x => {
-			let aud = new Audio(soundPath);
-			aud.onloadstart = () => {aud.isLoaded = true;};
-				// on PC, the events fire in this sequence: [loadstart, durationchange, loadedmetadata, loadeddata, canplay, canplaythrough], where on iPhone, the events fire in this sequence: [loadstart, durationchange, loadedmetadata]
-			return aud;
-		});
-	}
-	
-	// for testing mobile vs PC HTMLMediaElement events
-	['abort', 'canplay', 'canplaythrough', 'durationchange', 'emptied', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'ratechange'].forEach(evStr => {
-		this.soundLib[thudSoundPath][0].addEventListener(evStr, function(e){
-			write_marquee(evStr);
-		});
+	let audio = new Audio(path);
+	audio.addEventListener('loadeddata', function(){
+		audio.play();
 	});
 }
 
-ShortSoundEngine.prototype.is_done_loading = function()
+// let thudSoundPath = 'thud2.wav';
+let thudSoundPath = 'https://rexdragin59.github.io/circledefense/thud2.wav';
+// let snareSoundPath = 'snare.wav';
+let snareSoundPath = 'https://rexdragin59.github.io/circledefense/snare.wav';
+// let spitSoundPath = 'spit.wav';
+let spitSoundPath = 'https://rexdragin59.github.io/circledefense/spit.wav';//'spit.wav';
+// let coinSoundPath = 'coinClink.wav';
+let coinSoundPath = 'https://rexdragin59.github.io/circledefense/coinClink.wav';
+//let birdSoundPath = 'birdSongs.mp3';
+let birdSoundPath = 'https://rexdragin59.github.io/circledefense/birdSongs.mp3';
+let birdAudio;	// Audio object
+// let tapSoundPath = 'tap.wav';
+let tapSoundPath = 'https://rexdragin59.github.io/circledefense/tap.wav';
+
+try
 {
-	return Object.values(this.soundLib).every( audArr => audArr.every(aud => aud.isLoaded) );
+	load_sound_from_file(thudSoundPath);
+	load_sound_from_file(snareSoundPath);
+	load_sound_from_file(spitSoundPath);
+	load_sound_from_file(coinSoundPath);
+	load_sound_from_file(tapSoundPath);
+	load_sound_from_file(birdSoundPath);
 }
-
-// must call each Audio's .play() for the first time inside event callback, otherwise iOS will susequently throw NotAllowedError for calling Audio.play() inside not-event-callback scope
-// returns Boolean whether every sound was successfully played
-ShortSoundEngine.prototype.unlock_sound_permission = function()
+catch(e)
 {
-	for(let soundPath in this.soundLib)
-	{
-		for(let aud of this.soundLib[soundPath])
-		{
-			if (!aud.isLoaded)
-			{
-				write_marquee(`"${aud.src}" not loaded enough to play`);
-				return false;
-			}
-			
-			aud.play().catch(e => {
-				write_marquee(`rejected playing sound "${aud.src}": ${e.toString()}`);
-			});
-			if (aud.paused)
-			{
-				aud.pause();	// explicitly pause just in case .play() started playinga after returning from ShortSoundEngine.unlock_sound_permission()
-				return false;
-			}
-			aud.pause();	// pause immediately in order to NOT play the sound right now
-		}
-	}
-	this.hasUnlockedPermission = true;
-	return true;
+	throw e.message;
 }
-
-ShortSoundEngine.prototype.play_sound = function(soundFilePath)
-{
-	if (!(soundFilePath in this.soundLib))
-	{
-		throw new Error(`cannot find sound "${soundFilePath}" in short sound engine`);
-	}
-	
-	// find first available sound
-	let sound = this.soundLib[soundFilePath].find(aud => aud.paused);
-	if (sound)
-	{
-		sound.currentTime = 0;
-		sound.play().catch(e => {
-			write_marquee(`rejected playing sound "${soundFilePath}": ${e.toString()}`);
-		});
-	}
-	else
-	{
-		console.log(`all Audio for sound "${soundFilePath}" occupied; cannot request another`);	// silently fail to play sound
-	}
-}
-
-let thudSoundPath = 'thud2.wav';
-let snareSoundPath = 'snare.wav';
-let spitSoundPath = 'spit.wav';
-let coinSoundPath = 'coinClink.wav';
-let birdSoundPath = 'birdSongs.mp3';
-let tapSoundPath = 'tap.wav';
-let birdAudio;	// Audio object for long song
-
-console.log('TODO bring all birdAudio functionality into ShortSoundEngine class');
-console.log('figure out why star particles and smoke particles are so CPU-intensive on iPhone');
 
 const MUSIC_PLAY = 'MUSIC_PLAY';
 const MUSIC_PAUSE = 'MUSIC_PAUSE';
@@ -2137,7 +2076,6 @@ function toggle_music_pause_play()
 const GAME_STATE_UPGRADE = 'GAME_STATE_UPGRADE';
 const GAME_STATE_PLAYING = 'GAME_STATE_PLAYING';
 const GAME_STATE_START = 'GAME_STATE_START';
-const GAME_STATE_RESTART = 'GAME_STATE_RESTART';
 let gameState = GAME_STATE_START;
 
 
@@ -2297,19 +2235,7 @@ StartGameButton.prototype = Object.create(Button.prototype);
 
 StartGameButton.prototype.onclick = function()
 {
-	// must call each Audio's .play() for the first time inside event callback, otherwise iOS will susequently throw NotAllowedError for calling Audio.play() inside not-event-callback scope
-	if (!shortSoundEngine.hasUnlockedPermission)
-	{
-		if (shortSoundEngine.unlock_sound_permission())
-		{
-			game.play_next_level();	// calling game.play_next_level() is ignored if birdAudio not loaded
-		}
-		else
-		{
-			write_marquee('failed to unlock sound permissions; game.play_next_level() ignored');
-		}
-	}
-		
+	game.play_next_level();	// calling game.play_next_level() is ignored if birdAudio not loaded
 }
 
 // constructor
@@ -2343,8 +2269,8 @@ UpgradeForksButton.prototype.onclick = function()
 
 UpgradeForksButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);
-	set_font(FONT_FRACTION_0);
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Bubbly";
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`# forks: ${nCannonBulletForks}`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? `${nCannonBulletForks*3} coins` : '---'}`, this.x, this.y + this.h + 40);
@@ -2383,7 +2309,7 @@ UpgradeReloadButton.prototype.onclick = function()
 UpgradeReloadButton.prototype.render = function()
 {
 	Button.prototype.render.call(this);	
-	set_font(FONT_FRACTION_0);
+	ctx.font = "20px Bubbly";
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`shot delay: ${cannonReloadDuration} frames`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? '10 coins' : '---'}`, this.x, this.y + this.h + 40);
@@ -2421,8 +2347,8 @@ UpgradeShotSpeedButton.prototype.onclick = function()
 
 UpgradeShotSpeedButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);
-	set_font(FONT_FRACTION_0);
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Bubbly";
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`shot speed: ${bulletSpeed}`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? '4 coins' : '---'}`, this.x, this.y + this.h + 40);
@@ -2460,8 +2386,8 @@ UpgradeBulletAtkPowerButton.prototype.onclick = function()
 
 UpgradeBulletAtkPowerButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);
-	set_font(FONT_FRACTION_0);
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Bubbly";
 	ctx.fillStyle = '#FFFFFFFF';
 	ctx.fillText(`atk: ${bulletAtkPower}`, this.x, this.y + this.h + 20);
 	ctx.fillText(`cost: ${this.can_upgrade() ? '7 coins' : '---'}`, this.x, this.y + this.h + 40);
@@ -2470,7 +2396,7 @@ UpgradeBulletAtkPowerButton.prototype.render = function()
 // constructor
 function FinishedUpgradesButton()
 {
-	let x = CANVAS_WIDTH*4/5, y = CANVAS_HEIGHT*1/6, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
+	let x = CANVAS_WIDTH*4/5, y = CANVAS_HEIGHT*1/3, w = CANVAS_WIDTH/10, h = CANVAS_HEIGHT/10;
 	let buttonRoundCornerRadius = 5.0;
 	let buttonOffColor = '#FF000080';
 	let buttonOverColor = '#0000FF80';
@@ -2487,10 +2413,10 @@ FinishedUpgradesButton.prototype.onclick = function()
 
 FinishedUpgradesButton.prototype.render = function()
 {
-	Button.prototype.render.call(this);
-	set_font(FONT_FRACTION_0);
+	Button.prototype.render.call(this);	
+	ctx.font = "20px Bubbly";
 	ctx.fillStyle = '#FFFFFFFF';
-	ctx.fillText('next level', this.x, this.y + this.h + 20);
+	ctx.fillText(`next level`, this.x, this.y + this.h + 20);
 }
 
 let activeButtons = [];	// Array of (subclasses of) Button
@@ -2581,6 +2507,7 @@ function parse_enemy_spawn_script(src)
 	return timelines;
 }
 
+// see parse_enemy_spawn_script() for formatting
 let enemySpawnSrc = `//
 snake,0
 crab,100
@@ -2593,6 +2520,7 @@ crab,460
 crab,520
 crab,580
 crab,640
+crab,740
 LEVEL_end0
 
 crab,100
@@ -2691,23 +2619,9 @@ let levelStartFrame = 0;
 let currLevel = -1;
 let nextEnemySpawnIndex = 0;
 let levelCompleteFrame = undefined;	// first frame where all enemies have been killed; undefined if level is not yet complete
-const FPS_QTY_FRAMES_TO_RECORD = 60;
-let fpsRecord = new Array(FPS_QTY_FRAMES_TO_RECORD).fill(0);
+let gameOverFrame = undefined; 	// first frame where cannon reached zero health
+const GAME_OVER_WAIT_DURATION = 5*FPS;
 
-const MARQUEE_STRS_MAX_QTY = 10;
-let marqueeStrs = [];	// Array of String of length at most MARQUEE_STRS_MAX_QTY
-let marqueeFirstIndex = 0;
-function write_marquee(str)
-{
-	marqueeStrs.push(str);
-	if (marqueeStrs.length > MARQUEE_STRS_MAX_QTY)
-	{
-		marqueeStrs.splice(0, 1);
-		++marqueeFirstIndex;
-	}
-	document.getElementById('errorMarquee').innerText = marqueeStrs.map((str, i) => (i+marqueeFirstIndex).toString().concat('>', str)).join('\n');
-
-}
 var game = {
 	// set canvas and create Context
 	
@@ -2723,8 +2637,8 @@ var game = {
 		
 		// handle mouse down
 		window.addEventListener('mousedown', function(e){
-			xMouse = e.clientX - xCanvas;
-			yMouse = e.clientY - yCanvas;
+			let xMouse = e.clientX - xCanvas;
+			let yMouse = e.clientY - yCanvas;
 			// handle mouse down here
 			mouseDownLoc = new vec2(xMouse, yMouse);
 			mouseDownLoc = camera.screen_to_world_coords(mouseDownLoc);
@@ -2733,8 +2647,8 @@ var game = {
 		
 		// handle mouse motion
 		window.addEventListener('mousemove', function(e){
-			xMouse = e.clientX - xCanvas;	// no need to add/subtract window.pageXOffset, because xCanvas already accounts for page offset
-			yMouse = e.clientY - yCanvas;
+			let xMouse = e.clientX - xCanvas;	// no need to add/subtract window.pageXOffset, because xCanvas already accounts for page offset
+			let yMouse = e.clientY - yCanvas;
 			
 			// handle mouse motion here
 			mouseLoc.x = xMouse;
@@ -2745,8 +2659,8 @@ var game = {
 		
 		// handle mouse release
 		window.addEventListener('mouseup', function(e){
-			xMouse = e.clientX - xCanvas;
-			yMouse = e.clientY - yCanvas;
+			let xMouse = e.clientX - xCanvas;
+			let yMouse = e.clientY - yCanvas;
 			// handle mouse up here
 			mouseLoc.x = xMouse;
 			mouseLoc.y = yMouse;
@@ -2866,7 +2780,7 @@ var game = {
 				} // end if !gamePaused
 			}	// end if gameState == playing || gameState == upgrade
 		}.bind(this));
-		
+
 		// load resources
 		this.reset_game();
 		
@@ -2880,7 +2794,9 @@ var game = {
 			birdAudio.play();
 		});
 		
-		shortSoundEngine.load_sounds();	// load short sounds
+		// load font
+		const fontFile = new FontFace("Bubbly", 'url("./Chicago Sunday Demo.otf")');
+		document.fonts.add(fontFile);
 		
 		// load more things
 	},
@@ -2927,6 +2843,7 @@ var game = {
 			const CANNON_RECOIL_RECOVER_RATE = 0.93;
 			cannonBarrelRecoilPos *= CANNON_RECOIL_RECOVER_RATE;	// exponentially decaying back to normal
 			
+			// check if cannon can fire bullet
 			--cannonReloadFramesRemaining;
 			if (cannonReloadFramesRemaining <= 0)
 			{
@@ -2949,7 +2866,7 @@ var game = {
 												direc.mult(bulletSpeed), BULLET_RADIUS);
 						particleEngine.add_particle(bullet);
 					}
-					shortSoundEngine.play_sound(spitSoundPath);
+					play_sound_from_file(spitSoundPath);
 				}
 			}
 			
@@ -2968,7 +2885,7 @@ var game = {
 						b1.isActive = false;
 						particleEngine.create_smoke_puffs(get_circle_collision_loc(b1.pos, e1.pos, b1.radius, e1.radius));
 						bullets = bullets.slice(0, b).concat(bullets.slice(b+1));
-						shortSoundEngine.play_sound(tapSoundPath);
+						play_sound_from_file(tapSoundPath);
 						
 						// damage dealt to enemy
 						e1.take_damage(bulletAtkPower);
@@ -2976,7 +2893,7 @@ var game = {
 						{
 							e1.isActive = false;
 							particleEngine.create_star_explosion(e1.pos);
-							shortSoundEngine.play_sound(thudSoundPath);
+							play_sound_from_file(thudSoundPath);
 							
 							const COIN_RADIUS = 20;
 							particleEngine.add_particle(new Coin(e1.pos, COIN_RADIUS)); // drop coin
@@ -2998,18 +2915,17 @@ var game = {
 					particleEngine.create_star_explosion(e1.pos);
 					e1.isActive = false;
 					enemies = enemies.slice(0, e).concat(enemies.slice(e+1));
-					shortSoundEngine.play_sound(thudSoundPath);
+					play_sound_from_file(thudSoundPath);
 
 					if (frame >= lastCannonHurtFrame + CANNON_HURT_DURATION)
 					{
 						// enemy has hurt cannon
-						shortSoundEngine.play_sound(snareSoundPath);
+						play_sound_from_file(snareSoundPath);
 						
 						--cannonHealth;
-						if (cannonHealth == 0)
+						if (cannonHealth == 0 && gameOverFrame == undefined)
 						{
-							game.reset_game(true);
-							return;	// immediately abort, since running through the remaining enemy/cannon collisions are invalid
+							gameOverFrame = frame;
 						}
 						
 						// Begin cannon flashing and camera shake
@@ -3027,13 +2943,23 @@ var game = {
 				if (does_circle_contain_point(mouseLoc, CURSOR_COIN_COLLECT_RADIUS + coin.radius, coin.pos))
 				{
 					coin.evaporate();
-					shortSoundEngine.play_sound(coinSoundPath);
+					play_sound_from_file(coinSoundPath);
 					++nCoins;
 				}
 			});
 			
+			// check if can return to main menu due to game over
+			if (gameOverFrame != undefined)
+			{
+				if (frame - gameOverFrame >= GAME_OVER_WAIT_DURATION)
+				{
+					game.reset_game(true);
+					return; // immediately abort, since otherwise the enemySpawnTimelines[currLevel].length later in this game.update() function will throw exception
+				}
+			}
+			
 			// check for level completion
-			if (levelCompleteFrame == undefined)
+			if (levelCompleteFrame == undefined && gameOverFrame == undefined)
 			{
 				if (nextEnemySpawnIndex >= enemySpawnTimelines[currLevel].length && !particleEngine.particles.some(p => p instanceof Enemy))
 				{
@@ -3064,26 +2990,13 @@ var game = {
 			
 			// fps
 			let currTime = new Date().getTime();
-			fpsRecord.splice(0, 1);
-			fpsRecord.push(1000/(currTime-prevFrameTime));
-			let mean = fpsRecord.reduce((accum, fps) => accum + fps)/FPS_QTY_FRAMES_TO_RECORD;
-			let sumFpsSq = fpsRecord.map(fps => fps*fps).reduce((accum, fpsSq) => accum + fpsSq);
-			let sampSd = Math.sqrt( (sumFpsSq-FPS_QTY_FRAMES_TO_RECORD*mean**2)/(FPS_QTY_FRAMES_TO_RECORD-1) );
 			if (frame % NUM_FRAMES_PER_FPS_UPDATE == 0)
 			{
-				
-				document.getElementById("fpsDisplay").innerText = 'FPS mean: '.concat(mean.toFixed(1), '    FPS sampSd: ', sampSd.toFixed(1));
+				document.getElementById("fpsDisplay").innerText = 'FPS: '.concat((1000/(currTime-prevFrameTime)).toFixed(1));
 			}
 			prevFrameTime = currTime;
 			
 			++frame;
-		}
-		else if (gameState == GAME_STATE_START)
-		{
-			if (activeButtons.length == 0 && shortSoundEngine.is_done_loading())
-			{
-				activeButtons.push(new StartGameButton());
-			}
 		}
 		
 		if (!debugFlailPaused)
@@ -3103,7 +3016,7 @@ var game = {
 		
 		if (gameState == GAME_STATE_PLAYING)
 		{
-			// render particles
+			// render fles
 			particleEngine.render();
 			
 			// render cursor crosshair
@@ -3178,22 +3091,44 @@ var game = {
 			const LEVEL_START_WAIT_DURATION = 180;
 			if (frame - levelStartFrame < LEVEL_START_WAIT_DURATION)
 			{
-				set_font(FONT_FRACTION_2);
-				ctx.fillStyle = '#FFFFFF';
-				ctx.fillText(`LEVEL ${currLevel}`, 220, CANVAS_HEIGHT/2);
+				let opacityParam = (frame - levelStartFrame)/LEVEL_START_WAIT_DURATION;
+				let opacity = Math.min(1, 2*(1-opacityParam));
+				ctx.font = get_font_size(CANVAS_HEIGHT*0.1, "Bubbly") + ' Bubbly';
+				ctx.textAlign = 'center';
+				ctx.fillStyle = `#FFFFFF${Math.floor(opacity*255).toString(16).padStart(2, '0')}`;
+				ctx.fillText(`LEVEL ${currLevel}`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
+				ctx.textAlign = 'left';
 			}
 			
 			// render Level Complete text
 			if (levelCompleteFrame != undefined)
 			{
-				set_font(FONT_FRACTION_2);
+				let fontHeight = CANVAS_HEIGHT*0.1;
+				ctx.textAlign = 'center';
+				ctx.font = get_font_size(fontHeight, 'Bubbly') + ' Bubbly';
 				ctx.fillStyle = '#FFFFFF';
-				ctx.fillText('LEVEL COMPLETE', 100, CANVAS_HEIGHT/2);
+				ctx.fillText('LEVEL', CANVAS_WIDTH/2, CANVAS_HEIGHT*0.5);
+				ctx.fillText('COMPLETE', CANVAS_WIDTH/2, CANVAS_HEIGHT*0.6);
 				if (currLevel == enemySpawnTimelines.length - 1)
 				{
-					set_font(FONT_FRACTION_2);
-					ctx.fillText('ALL LEVELS COMPLETE, returning to title screen', 20, CANVAS_HEIGHT*3/4);
+					ctx.font = get_font_size(CANVAS_HEIGHT*0.15, 'Bubbly') + ' Bubbly';
+					ctx.fillText('ALL LEVELS COMPLETE', CANVAS_WIDTH/2, CANVAS_HEIGHT*0.75);
+					ctx.fillText('returning to title screen', CANVAS_WIDTH/2, CANVAS_HEIGHT*0.75 + fontHeight);
 				}
+				ctx.textAlign = 'left';
+			}
+			
+			// render Game Over text
+			if (gameOverFrame != undefined)
+			{
+				let fontHeight = CANVAS_HEIGHT*0.15;
+				let yParam = (frame - gameOverFrame)/GAME_OVER_WAIT_DURATION;
+				yParam = yParam * 2 - 0.33;
+				yParam = Math.min(1, Math.max(0, yParam));
+				ctx.textAlign = 'center';
+				ctx.font = get_font_size(fontHeight, 'Bubbly') + ' Bubbly';
+				ctx.fillText('GAME OVER', CANVAS_WIDTH/2, CANVAS_HEIGHT*0.55*yParam - fontHeight);	// start from offscreen and travel downward
+				ctx.textAlign = 'left';
 			}
 			
 			if (gamePaused)
@@ -3212,7 +3147,7 @@ var game = {
 			this.render_coin_display();
 			
 			camera.set_identity_matrix();
-			set_font(FONT_FRACTION_2);
+			ctx.font = "40px Bubbly";
 			ctx.fillStyle = '#FFFFFFFF';
 			ctx.fillText('UPGRADE SCREEN', 50, 10);
 			
@@ -3222,19 +3157,24 @@ var game = {
 			}
 			camera.set_transform_matrix();
 		}
-		else if (gameState == GAME_STATE_START || gameState == GAME_STATE_RESTART)
+		else if (gameState == GAME_STATE_START)
 		{
-			set_font(FONT_FRACTION_2);
+			let rowHeight = CANVAS_HEIGHT*0.1;
+			ctx.font = get_font_size(rowHeight, 'Bubbly') + " Bubbly";
+			ctx.textAlign = 'center';
 			ctx.fillStyle = '#FFFFFFFF';
 			if (gameState == GAME_STATE_START)
 			{
-				ctx.fillText('CLICK BUTTON TO BEGIN PLAYING', 50, 10);
+				ctx.fillText('CLICK BUTTON', CANVAS_WIDTH/2, 10 + rowHeight*0);
+				ctx.fillText('TO BEGIN', CANVAS_WIDTH/2, 10 + rowHeight*1);
+				ctx.fillText('PLAYING', CANVAS_WIDTH/2, 10 + rowHeight*2);
 			}
 			else
 			{
-				ctx.fillText('GAME OVER, CLICK BUTTON TO RESTART', 50, 10);
+				ctx.fillText('GAME OVER, CLICK BUTTON TO RESTART', CANVAS_WIDTH/2, 10);
 				ctx.fillText(`Your coin score: ${nCoinsFinalScore}`, 190, 110);
 			}
+			ctx.textAlign = 'left';
 			
 			// render active buttons
 			activeButtons.forEach(bt => bt.render());
@@ -3247,7 +3187,7 @@ var game = {
 	render_coin_display: function()
 	{
 		camera.set_identity_matrix();
-		set_font(FONT_FRACTION_1);
+		ctx.font = "20px Bubbly";
 		ctx.fillStyle = '#FFFFFFFF';
 		const COIN_DISPLAY_MINUS_X = 150;
 		const COIN_DISPLAY_Y = 10;
@@ -3272,7 +3212,8 @@ var game = {
 		cannonReloadDuration = CANNON_INITIAL_RELOAD_FRAMES;
 		bulletSpeed = BULLET_INITIAL_SPEED;
 		lastCannonHurtFrame = -99999;
-		cannonHealth = 5;
+		gameOverFrame = undefined;
+		cannonHealth = 2;
 		cannonReloadFramesRemaining = 0;
 		bulletAtkPower = BULLET_INITIAL_ATK_POWER;
 		camera.stop_shake();
@@ -3282,7 +3223,7 @@ var game = {
 		
 		if (isGameOver)
 		{
-			gameState = GAME_STATE_RESTART;
+			gameState = GAME_STATE_START;
 			nCoinsFinalScore = nCoins;
 		}
 		else
@@ -3291,8 +3232,7 @@ var game = {
 		}
 		nCoins = 0;
 		
-		// activeButtons.push(new StartGameButton());
-		// let game.update() add StartGameButton to screen after shortSoundEngine finishes loading all sounds
+		activeButtons.push(new StartGameButton());
 	},
 	
 	// should only be called to go from gameState==playing to gameState==upgrade
@@ -3321,7 +3261,7 @@ var game = {
 		const MAX_AMPLITUDE = Math.PI/10;
 		const MIN_EQUILIB_THETA = Math.PI*4/3;
 		const MAX_EQUILIB_THETA = Math.PI*5/3;
-		const NUM_GRASS_CLUMPS = 5;	// 200
+		const NUM_GRASS_CLUMPS = 200;
 		const MIN_NUM_BLADES_PER_CLUMP = 3;
 		const MAX_NUM_BLADES_PER_CLUMP = 3;
 		const MAX_CLUMP_DIST_OFFSET = 14.56;
@@ -3360,7 +3300,7 @@ var game = {
 		ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 		
 		const PAUSE_SCREEN_TEXT_COLOR = '#EEFFEEFF';
-		set_font(FONT_FRACTION_4);
+		ctx.font = '80px Bubbly';
 		let pauseText = 'GAME PAUSED';
 		ctx.fillStyle = PAUSE_SCREEN_TEXT_COLOR;
 		ctx.fillText(pauseText, CANVAS_WIDTH/2 - ctx.measureText(pauseText).width/2, CANVAS_HEIGHT/2);
@@ -3375,7 +3315,7 @@ var game = {
 		}
 		catch(e)
 		{
-			write_marquee(`^${e.message}$`);	// for mobile-friendly debugging
+			document.getElementById('errorMarquee').innerText = `^${e.message}$`;	// for mobile-friendly debugging
 			throw e;
 		}
 	},
@@ -3395,12 +3335,14 @@ function startGame(){
 	}
 	catch(e)
 	{
-		write_marquee(e.message);
+		document.getElementById('errorMarquee').innerText = e.message;
 		throw e;
 	}
 }
 
-write_marquee('Compile success');	// for mobile-friendly debugging
+document.addEventListener("DOMContentLoaded", startGame);
+document.getElementById('errorMarquee').innerText = 'Compile success';	// for mobile-friendly debugging
+
 </script>
 </body>
 </html>
